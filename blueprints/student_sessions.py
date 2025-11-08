@@ -25,7 +25,7 @@ def join_session():
     
     try:
         # Get session details
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -49,7 +49,7 @@ def join_session():
                 return jsonify({"error": "Session is not available"}), 400
         
         # Check if student has already joined
-        existing_response = supabase.table("StudentSession").select("student_session_id").eq("session_id", session_id).eq("student_id", student_id).execute()
+        existing_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session_id).eq("student_id", student_id).execute()
         
         if existing_response.data:
             student_session_id = existing_response.data[0]["student_session_id"]
@@ -64,7 +64,7 @@ def join_session():
             "student_id": student_id
         }
         
-        student_session_response = supabase.table("StudentSession").insert(student_session_data).execute()
+        student_session_response = supabase.table("studentsession").insert(student_session_data).execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Failed to join session"}), 500
@@ -89,7 +89,7 @@ def start_session(student_session_id):
     
     try:
         # Verify student session exists and belongs to student
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -100,7 +100,7 @@ def start_session(student_session_id):
             return jsonify({"error": "Access denied"}), 403
         
         # Get session details
-        session_response = supabase.table("Session").select("*").eq("session_id", student_session["session_id"]).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", student_session["session_id"]).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -116,7 +116,7 @@ def start_session(student_session_id):
         # For PRACTICE and INTERVIEW, generate questions if not already generated
         if session["session_type"] in ["PRACTICE", "INTERVIEW"]:
             # Check if questions exist
-            questions_response = supabase.table("Question").select("question_id").eq("session_id", session["session_id"]).execute()
+            questions_response = supabase.table("question").select("question_id").eq("session_id", session["session_id"]).execute()
             
             if not questions_response.data:
                 # Generate questions on the fly
@@ -134,13 +134,13 @@ def start_session(student_session_id):
                     for question in questions:
                         question["status"] = "approved"  # Auto-approve for practice/interview
                         question["reference_answer"] = None  # Will be generated when answer is submitted
-                        supabase.table("Question").insert(question).execute()
+                        supabase.table("question").insert(question).execute()
                 except Exception as e:
                     print(f"Warning: Failed to generate questions on-the-fly: {e}")
                     # Continue anyway - questions might be generated later
         
         # Get total questions count
-        questions_response = supabase.table("Question").select("question_id").eq("session_id", session["session_id"]).eq("status", "approved").execute()
+        questions_response = supabase.table("question").select("question_id").eq("session_id", session["session_id"]).eq("status", "approved").execute()
         total_questions = len(questions_response.data or [])
         
         if total_questions == 0:
@@ -165,7 +165,7 @@ def get_next_question(student_session_id):
     
     try:
         # Verify student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -178,11 +178,11 @@ def get_next_question(student_session_id):
         session_id = student_session["session_id"]
         
         # Get all answered question IDs
-        answered_response = supabase.table("StudentAnswer").select("question_id").eq("student_session_id", student_session_id).execute()
+        answered_response = supabase.table("studentanswer").select("question_id").eq("student_session_id", student_session_id).execute()
         answered_question_ids = [a["question_id"] for a in (answered_response.data or [])]
         
         # Get all approved questions
-        all_questions_response = supabase.table("Question").select("*").eq("session_id", session_id).eq("status", "approved").execute()
+        all_questions_response = supabase.table("question").select("*").eq("session_id", session_id).eq("status", "approved").execute()
         all_questions = all_questions_response.data or []
         
         # Filter out already answered questions
@@ -230,7 +230,7 @@ def submit_answer(student_session_id):
     
     try:
         # Verify student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -241,7 +241,7 @@ def submit_answer(student_session_id):
             return jsonify({"error": "Access denied"}), 403
         
         # Get question
-        question_response = supabase.table("Question").select("*").eq("question_id", question_id).single().execute()
+        question_response = supabase.table("question").select("*").eq("question_id", question_id).single().execute()
         
         if not question_response.data:
             return jsonify({"error": "Question not found"}), 404
@@ -249,7 +249,7 @@ def submit_answer(student_session_id):
         question = question_response.data
         
         # Check if already answered
-        existing_answer_response = supabase.table("StudentAnswer").select("answer_id").eq("student_session_id", student_session_id).eq("question_id", question_id).execute()
+        existing_answer_response = supabase.table("studentanswer").select("answer_id").eq("student_session_id", student_session_id).eq("question_id", question_id).execute()
         
         if existing_answer_response.data:
             return jsonify({"error": "Question already answered"}), 400
@@ -259,7 +259,7 @@ def submit_answer(student_session_id):
         
         # For PRACTICE/INTERVIEW sessions, generate reference answer on-the-fly if not available
         if not reference_answer:
-            session_response = supabase.table("Session").select("session_type, material_id, course_name").eq("session_id", question["session_id"]).single().execute()
+            session_response = supabase.table("session").select("session_type, material_id, course_name").eq("session_id", question["session_id"]).single().execute()
             session = session_response.data if session_response.data else {}
             
             if session.get("session_type") in ["PRACTICE", "INTERVIEW"]:
@@ -276,7 +276,7 @@ def submit_answer(student_session_id):
                     
                     # Update question with reference answer
                     if reference_answer:
-                        supabase.table("Question").update({
+                        supabase.table("question").update({
                             "reference_answer": reference_answer
                         }).eq("question_id", question_id).execute()
                 except Exception as e:
@@ -300,7 +300,7 @@ def submit_answer(student_session_id):
             "ai_feedback": evaluation["feedback"]
         }
         
-        answer_response = supabase.table("StudentAnswer").insert(answer_data).execute()
+        answer_response = supabase.table("studentanswer").insert(answer_data).execute()
         
         if not answer_response.data:
             return jsonify({"error": "Failed to save answer"}), 500
@@ -309,7 +309,7 @@ def submit_answer(student_session_id):
         
         # Log AI request
         try:
-            supabase.table("AIRequestLog").insert({
+            supabase.table("airequestlog").insert({
                 "session_id": student_session["session_id"],
                 "request_type": "EVALUATE_ANSWER",
                 "request_payload": {"question_id": question_id, "answer_length": len(answer_text)},
@@ -319,11 +319,11 @@ def submit_answer(student_session_id):
             pass
         
         # Check if there are more questions
-        answered_response = supabase.table("StudentAnswer").select("question_id").eq("student_session_id", student_session_id).execute()
+        answered_response = supabase.table("studentanswer").select("question_id").eq("student_session_id", student_session_id).execute()
         answered_count = len(answered_response.data or [])
         
         # Get total questions
-        all_questions_response = supabase.table("Question").select("question_id").eq("session_id", question["session_id"]).eq("status", "approved").execute()
+        all_questions_response = supabase.table("question").select("question_id").eq("session_id", question["session_id"]).eq("status", "approved").execute()
         total_questions = len(all_questions_response.data or [])
         
         return jsonify({
@@ -347,7 +347,7 @@ def end_session(student_session_id):
     
     try:
         # Verify student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -360,7 +360,7 @@ def end_session(student_session_id):
         session_id = student_session["session_id"]
         
         # Get all answers
-        answers_response = supabase.table("StudentAnswer").select("*").eq("student_session_id", student_session_id).execute()
+        answers_response = supabase.table("studentanswer").select("*").eq("student_session_id", student_session_id).execute()
         
         if not answers_response.data:
             return jsonify({"error": "No answers found"}), 400
@@ -369,7 +369,7 @@ def end_session(student_session_id):
         
         # Get questions for each answer
         question_ids = [a["question_id"] for a in answers]
-        questions_response = supabase.table("Question").select("*").in_("question_id", question_ids).execute()
+        questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
         questions_dict = {q["question_id"]: q for q in (questions_response.data or [])}
         
         # Calculate overall score
@@ -400,7 +400,7 @@ def end_session(student_session_id):
         overall_feedback_data = generate_overall_feedback(qa_pairs, scores_summary)
         
         # Update student session
-        supabase.table("StudentSession").update({
+        supabase.table("studentsession").update({
             "score_total": overall_score,
             "ai_overall_feedback": overall_feedback_data["overall_feedback"]
         }).eq("student_session_id", student_session_id).execute()
@@ -424,7 +424,7 @@ def get_student_session(student_session_id):
     
     try:
         # Verify student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -435,16 +435,16 @@ def get_student_session(student_session_id):
             return jsonify({"error": "Access denied"}), 403
         
         # Get session details
-        session_response = supabase.table("Session").select("*").eq("session_id", student_session["session_id"]).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", student_session["session_id"]).single().execute()
         session = session_response.data if session_response.data else {}
         
         # Get all answers
-        answers_response = supabase.table("StudentAnswer").select("*").eq("student_session_id", student_session_id).execute()
+        answers_response = supabase.table("studentanswer").select("*").eq("student_session_id", student_session_id).execute()
         answers = answers_response.data or []
         
         # Get questions
         question_ids = [a["question_id"] for a in answers]
-        questions_response = supabase.table("Question").select("*").in_("question_id", question_ids).execute()
+        questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
         questions_dict = {q["question_id"]: q for q in (questions_response.data or [])}
         
         # Format answers
@@ -485,7 +485,7 @@ def get_history():
     
     try:
         # Get all student sessions
-        student_sessions_response = supabase.table("StudentSession").select("*").eq("student_id", student_id).order("join_time", desc=True).execute()
+        student_sessions_response = supabase.table("studentsession").select("*").eq("student_id", student_id).order("join_time", desc=True).execute()
         
         if not student_sessions_response.data:
             return jsonify([]), 200
@@ -494,7 +494,7 @@ def get_history():
         history = []
         for ss in student_sessions_response.data:
             # Get session details
-            session_response = supabase.table("Session").select("*").eq("session_id", ss["session_id"]).single().execute()
+            session_response = supabase.table("session").select("*").eq("session_id", ss["session_id"]).single().execute()
             session = session_response.data if session_response.data else {}
             
             history.append({

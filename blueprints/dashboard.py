@@ -29,18 +29,18 @@ def get_student_dashboard(student_id):
         user_data = user_response.data
         
         # Get student info
-        student_response = supabase.table("Student").select("*").eq("student_id", student_id).single().execute()
+        student_response = supabase.table("student").select("*").eq("student_id", student_id).single().execute()
         student_data = student_response.data if student_response.data else {}
         
         # Get all student sessions
-        student_sessions_response = supabase.table("StudentSession").select("*").eq("student_id", student_id).execute()
+        student_sessions_response = supabase.table("studentsession").select("*").eq("student_id", student_id).execute()
         student_sessions = student_sessions_response.data or []
         
         # Get session details for each student session
         session_ids = [ss["session_id"] for ss in student_sessions]
         sessions_dict = {}
         if session_ids:
-            sessions_response = supabase.table("Session").select("*").in_("session_id", session_ids).execute()
+            sessions_response = supabase.table("session").select("*").in_("session_id", session_ids).execute()
             sessions_dict = {s["session_id"]: s for s in (sessions_response.data or [])}
         
         # Calculate statistics
@@ -144,15 +144,15 @@ def get_lecturer_dashboard(lecturer_id):
         user_data = user_response.data
         
         # Get lecturer info
-        lecturer_response = supabase.table("Lecturer").select("*").eq("lecturer_id", lecturer_id).single().execute()
+        lecturer_response = supabase.table("lecturer").select("*").eq("lecturer_id", lecturer_id).single().execute()
         lecturer_data = lecturer_response.data if lecturer_response.data else {}
         
         # Get all sessions created by lecturer
-        sessions_response = supabase.table("Session").select("*").eq("created_by", lecturer_id).execute()
+        sessions_response = supabase.table("session").select("*").eq("created_by", lecturer_id).execute()
         sessions = sessions_response.data or []
         
         # Get all materials uploaded by lecturer
-        materials_response = supabase.table("Material").select("material_id").eq("uploaded_by", lecturer_id).execute()
+        materials_response = supabase.table("material").select("material_id").eq("uploaded_by", lecturer_id).execute()
         materials = materials_response.data or []
         
         # Calculate statistics
@@ -164,7 +164,7 @@ def get_lecturer_dashboard(lecturer_id):
         sessions_need_review = 0
         
         for session in sessions:
-            student_sessions_response = supabase.table("StudentSession").select("student_session_id").eq("session_id", session["session_id"]).execute()
+            student_sessions_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session["session_id"]).execute()
             student_count = len(student_sessions_response.data or [])
             total_students += student_count
             
@@ -187,7 +187,7 @@ def get_lecturer_dashboard(lecturer_id):
         recent_sessions_formatted = []
         for session in recent_sessions:
             # Get student count
-            student_sessions_response = supabase.table("StudentSession").select("student_session_id").eq("session_id", session["session_id"]).execute()
+            student_sessions_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session["session_id"]).execute()
             student_count = len(student_sessions_response.data or [])
             
             recent_sessions_formatted.append({

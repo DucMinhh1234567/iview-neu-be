@@ -36,7 +36,7 @@ def create_exam_session():
     
     try:
         # Verify material exists
-        material_response = supabase.table("Material").select("material_id").eq("material_id", material_id).single().execute()
+        material_response = supabase.table("material").select("material_id").eq("material_id", material_id).single().execute()
         if not material_response.data:
             return jsonify({"error": "Material not found"}), 404
         
@@ -54,7 +54,7 @@ def create_exam_session():
             "status": "created"
         }
         
-        session_response = supabase.table("Session").insert(session_data).execute()
+        session_response = supabase.table("session").insert(session_data).execute()
         
         if not session_response.data:
             return jsonify({"error": "Failed to create session"}), 500
@@ -91,7 +91,7 @@ def create_practice_session():
     try:
         # Verify material if provided
         if material_id:
-            material_response = supabase.table("Material").select("material_id").eq("material_id", material_id).single().execute()
+            material_response = supabase.table("material").select("material_id").eq("material_id", material_id).single().execute()
             if not material_response.data:
                 return jsonify({"error": "Material not found"}), 404
         
@@ -106,7 +106,7 @@ def create_practice_session():
             "status": "created"
         }
         
-        session_response = supabase.table("Session").insert(session_data).execute()
+        session_response = supabase.table("session").insert(session_data).execute()
         
         if not session_response.data:
             return jsonify({"error": "Failed to create session"}), 500
@@ -154,7 +154,7 @@ def create_interview_session():
             "status": "created"
         }
         
-        session_response = supabase.table("Session").insert(session_data).execute()
+        session_response = supabase.table("session").insert(session_data).execute()
         
         if not session_response.data:
             return jsonify({"error": "Failed to create session"}), 500
@@ -172,11 +172,11 @@ def create_interview_session():
             "num_questions": num_questions
         }
         
-        config_response = supabase.table("InterviewConfig").insert(config_data).execute()
+        config_response = supabase.table("interviewconfig").insert(config_data).execute()
         
         if not config_response.data:
             # Delete session if config creation fails
-            supabase.table("Session").delete().eq("session_id", session_id).execute()
+            supabase.table("session").delete().eq("session_id", session_id).execute()
             return jsonify({"error": "Failed to create interview config"}), 500
         
         return jsonify({
@@ -263,7 +263,7 @@ def get_sessions():
     user_role = request.user_role
     
     try:
-        query = supabase.table("Session").select("*")
+        query = supabase.table("session").select("*")
         
         # Filter by type if provided
         if session_type:
@@ -292,7 +292,7 @@ def get_sessions():
 def get_session(session_id):
     """Get session details."""
     try:
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -301,7 +301,7 @@ def get_session(session_id):
         
         # Get interview config if INTERVIEW session
         if session["session_type"] == "INTERVIEW":
-            config_response = supabase.table("InterviewConfig").select("*").eq("session_id", session_id).single().execute()
+            config_response = supabase.table("interviewconfig").select("*").eq("session_id", session_id).single().execute()
             if config_response.data:
                 session["interview_config"] = config_response.data
         
@@ -320,7 +320,7 @@ def update_session(session_id):
     
     try:
         # Verify session exists and user is creator
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -339,7 +339,7 @@ def update_session(session_id):
                 update_data[field] = data[field]
         
         if update_data:
-            supabase.table("Session").update(update_data).eq("session_id", session_id).execute()
+            supabase.table("session").update(update_data).eq("session_id", session_id).execute()
         
         return jsonify({"message": "Session updated successfully"}), 200
         
@@ -355,7 +355,7 @@ def delete_session(session_id):
     
     try:
         # Verify session exists and user is creator
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -366,13 +366,13 @@ def delete_session(session_id):
             return jsonify({"error": "Only session creator can delete"}), 403
         
         # Check if any students have participated
-        student_sessions_response = supabase.table("StudentSession").select("student_session_id").eq("session_id", session_id).limit(1).execute()
+        student_sessions_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session_id).limit(1).execute()
         
         if student_sessions_response.data:
             return jsonify({"error": "Cannot delete session with student participation"}), 400
         
         # Delete session (cascade will handle related records)
-        supabase.table("Session").delete().eq("session_id", session_id).execute()
+        supabase.table("session").delete().eq("session_id", session_id).execute()
         
         return jsonify({"message": "Session deleted successfully"}), 200
         
@@ -386,7 +386,7 @@ def generate_script(session_id):
     """Generate opening and closing script for session."""
     try:
         # Get session details
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -413,7 +413,7 @@ def generate_script(session_id):
         closing_script = response.get("closing_script", "")
         
         # Update session with scripts
-        supabase.table("Session").update({
+        supabase.table("session").update({
             "opening_script": opening_script,
             "closing_script": closing_script,
             "status": "reviewing_script"
@@ -436,7 +436,7 @@ def generate_script(session_id):
 def get_script(session_id):
     """Get opening and closing script for session."""
     try:
-        session_response = supabase.table("Session").select("opening_script, closing_script").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("opening_script, closing_script").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -457,7 +457,7 @@ def update_script(session_id):
     
     try:
         # Verify session and user is creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can edit script"}), 403
@@ -470,7 +470,7 @@ def update_script(session_id):
             update_data["closing_script"] = closing_script
         
         if update_data:
-            supabase.table("Session").update(update_data).eq("session_id", session_id).execute()
+            supabase.table("session").update(update_data).eq("session_id", session_id).execute()
         
         return jsonify({"message": "Script updated successfully"}), 200
         
@@ -484,14 +484,14 @@ def finalize_session(session_id):
     """Finalize session after all reviews are complete."""
     try:
         # Verify session and user is creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can finalize session"}), 403
         
         # Verify all requirements are met
         # Check if all questions have reference answers
-        questions_response = supabase.table("Question").select("question_id, reference_answer, status").eq("session_id", session_id).execute()
+        questions_response = supabase.table("question").select("question_id, reference_answer, status").eq("session_id", session_id).execute()
         
         if not questions_response.data:
             return jsonify({"error": "No questions found. Cannot finalize session without questions."}), 400
@@ -502,13 +502,13 @@ def finalize_session(session_id):
                 return jsonify({"error": "All questions must have approved reference answers"}), 400
         
         # Check if scripts are present
-        session_full = supabase.table("Session").select("opening_script, closing_script").eq("session_id", session_id).single().execute()
+        session_full = supabase.table("session").select("opening_script, closing_script").eq("session_id", session_id).single().execute()
         
         if not session_full.data.get("opening_script") or not session_full.data.get("closing_script"):
             return jsonify({"error": "Opening and closing scripts are required"}), 400
         
         # Update session status to ready
-        supabase.table("Session").update({
+        supabase.table("session").update({
             "status": "ready"
         }).eq("session_id", session_id).execute()
         

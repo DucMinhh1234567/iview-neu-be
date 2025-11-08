@@ -93,7 +93,7 @@ def register():
                 "lecturer_code": lecturer_code,
                 "department": department
             }
-            supabase.table("Lecturer").insert(lecturer_data).execute()
+            supabase.table("lecturer").insert(lecturer_data).execute()
         elif role == "STUDENT":
             student_data = {
                 "student_id": pg_user_id,
@@ -101,7 +101,7 @@ def register():
                 "class_name": class_name,
                 "course_year": course_year
             }
-            supabase.table("Student").insert(student_data).execute()
+            supabase.table("student").insert(student_data).execute()
         
         return jsonify({
             "message": "User registered successfully",
@@ -151,11 +151,11 @@ def login():
         # Get role-specific info
         role_info = {}
         if user_data["role"] == "LECTURER":
-            lecturer_response = supabase.table("Lecturer").select("*").eq("lecturer_id", user_data["user_id"]).single().execute()
+            lecturer_response = supabase.table("lecturer").select("*").eq("lecturer_id", user_data["user_id"]).single().execute()
             if lecturer_response.data:
                 role_info = lecturer_response.data
         elif user_data["role"] == "STUDENT":
-            student_response = supabase.table("Student").select("*").eq("student_id", user_data["user_id"]).single().execute()
+            student_response = supabase.table("student").select("*").eq("student_id", user_data["user_id"]).single().execute()
             if student_response.data:
                 role_info = student_response.data
         
@@ -219,11 +219,11 @@ def get_current_user():
         # Get role-specific info
         role_info = {}
         if user_data["role"] == "LECTURER":
-            lecturer_response = supabase.table("Lecturer").select("*").eq("lecturer_id", user_data["user_id"]).single().execute()
+            lecturer_response = supabase.table("lecturer").select("*").eq("lecturer_id", user_data["user_id"]).single().execute()
             if lecturer_response.data:
                 role_info = lecturer_response.data
         elif user_data["role"] == "STUDENT":
-            student_response = supabase.table("Student").select("*").eq("student_id", user_data["user_id"]).single().execute()
+            student_response = supabase.table("student").select("*").eq("student_id", user_data["user_id"]).single().execute()
             if student_response.data:
                 role_info = student_response.data
         

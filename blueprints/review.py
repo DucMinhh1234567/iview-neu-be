@@ -17,7 +17,7 @@ def get_sessions_to_review():
     
     try:
         # Get all EXAM sessions created by lecturer
-        sessions_response = supabase.table("Session").select("*").eq("created_by", lecturer_id).eq("session_type", "EXAM").order("created_at", desc=True).execute()
+        sessions_response = supabase.table("session").select("*").eq("created_by", lecturer_id).eq("session_type", "EXAM").order("created_at", desc=True).execute()
         
         if not sessions_response.data:
             return jsonify([]), 200
@@ -26,7 +26,7 @@ def get_sessions_to_review():
         sessions_with_counts = []
         for session in sessions_response.data:
             # Count students who have completed
-            student_sessions_response = supabase.table("StudentSession").select("student_session_id").eq("session_id", session["session_id"]).execute()
+            student_sessions_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session["session_id"]).execute()
             student_count = len(student_sessions_response.data or [])
             
             sessions_with_counts.append({
@@ -48,7 +48,7 @@ def get_session_students(session_id):
     
     try:
         # Verify session exists and lecturer is creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -57,7 +57,7 @@ def get_session_students(session_id):
             return jsonify({"error": "Only session creator can view students"}), 403
         
         # Get all student sessions
-        student_sessions_response = supabase.table("StudentSession").select("*").eq("session_id", session_id).order("join_time", desc=True).execute()
+        student_sessions_response = supabase.table("studentsession").select("*").eq("session_id", session_id).order("join_time", desc=True).execute()
         
         if not student_sessions_response.data:
             return jsonify([]), 200
@@ -66,7 +66,7 @@ def get_session_students(session_id):
         students = []
         for ss in student_sessions_response.data:
             # Get student info
-            student_response = supabase.table("Student").select("*, User(*)").eq("student_id", ss["student_id"]).single().execute()
+            student_response = supabase.table("student").select("*, User(*)").eq("student_id", ss["student_id"]).single().execute()
             
             student_data = {}
             user_data = {}
@@ -99,7 +99,7 @@ def get_student_session_details(student_session_id):
     
     try:
         # Get student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -107,11 +107,11 @@ def get_student_session_details(student_session_id):
         ss = student_session_response.data
         
         # Get session info
-        session_response = supabase.table("Session").select("*").eq("session_id", ss["session_id"]).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", ss["session_id"]).single().execute()
         session = session_response.data if session_response.data else {}
         
         # Get student info
-        student_response = supabase.table("Student").select("*, User(*)").eq("student_id", ss["student_id"]).single().execute()
+        student_response = supabase.table("student").select("*, User(*)").eq("student_id", ss["student_id"]).single().execute()
         student_data = student_response.data if student_response.data else {}
         user_data = student_data.get("User", {}) if isinstance(student_data.get("User"), dict) else {}
         
@@ -120,14 +120,14 @@ def get_student_session_details(student_session_id):
             return jsonify({"error": "Only session creator can view student session"}), 403
         
         # Get all answers
-        answers_response = supabase.table("StudentAnswer").select("*").eq("student_session_id", student_session_id).execute()
+        answers_response = supabase.table("studentanswer").select("*").eq("student_session_id", student_session_id).execute()
         answers = answers_response.data or []
         
         # Get questions
         question_ids = [a["question_id"] for a in answers] if answers else []
         questions_dict = {}
         if question_ids:
-            questions_response = supabase.table("Question").select("*").in_("question_id", question_ids).execute()
+            questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
             questions_dict = {q["question_id"]: q for q in (questions_response.data or [])}
         
         # Format answers
@@ -195,7 +195,7 @@ def edit_answer_score(answer_id):
     
     try:
         # Get answer
-        answer_response = supabase.table("StudentAnswer").select("*").eq("answer_id", answer_id).single().execute()
+        answer_response = supabase.table("studentanswer").select("*").eq("answer_id", answer_id).single().execute()
         
         if not answer_response.data:
             return jsonify({"error": "Answer not found"}), 404
@@ -203,11 +203,11 @@ def edit_answer_score(answer_id):
         answer = answer_response.data
         
         # Get student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", answer["student_session_id"]).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", answer["student_session_id"]).single().execute()
         student_session = student_session_response.data if student_session_response.data else {}
         
         # Get session
-        session_response = supabase.table("Session").select("*").eq("session_id", student_session.get("session_id")).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", student_session.get("session_id")).single().execute()
         session = session_response.data if session_response.data else {}
         
         # Verify lecturer is session creator
@@ -218,13 +218,13 @@ def edit_answer_score(answer_id):
         old_score = answer.get("lecturer_score") or answer.get("ai_score")
         
         # Update answer
-        supabase.table("StudentAnswer").update({
+        supabase.table("studentanswer").update({
             "lecturer_score": lecturer_score
         }).eq("answer_id", answer_id).execute()
         
         # Log review action
         try:
-            supabase.table("ReviewLog").insert({
+            supabase.table("reviewlog").insert({
                 "answer_id": answer_id,
                 "reviewer_id": lecturer_id,
                 "old_score": old_score,
@@ -261,7 +261,7 @@ def edit_answer_feedback(answer_id):
     
     try:
         # Get answer
-        answer_response = supabase.table("StudentAnswer").select("*").eq("answer_id", answer_id).single().execute()
+        answer_response = supabase.table("studentanswer").select("*").eq("answer_id", answer_id).single().execute()
         
         if not answer_response.data:
             return jsonify({"error": "Answer not found"}), 404
@@ -269,11 +269,11 @@ def edit_answer_feedback(answer_id):
         answer = answer_response.data
         
         # Get student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", answer["student_session_id"]).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", answer["student_session_id"]).single().execute()
         student_session = student_session_response.data if student_session_response.data else {}
         
         # Get session
-        session_response = supabase.table("Session").select("*").eq("session_id", student_session.get("session_id")).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", student_session.get("session_id")).single().execute()
         session = session_response.data if session_response.data else {}
         
         # Verify lecturer is session creator
@@ -284,13 +284,13 @@ def edit_answer_feedback(answer_id):
         old_feedback = answer.get("lecturer_feedback") or answer.get("ai_feedback", "")
         
         # Update answer
-        supabase.table("StudentAnswer").update({
+        supabase.table("studentanswer").update({
             "lecturer_feedback": lecturer_feedback
         }).eq("answer_id", answer_id).execute()
         
         # Log review action
         try:
-            supabase.table("ReviewLog").insert({
+            supabase.table("reviewlog").insert({
                 "answer_id": answer_id,
                 "reviewer_id": lecturer_id,
                 "old_feedback": old_feedback,
@@ -323,7 +323,7 @@ def edit_overall_feedback(student_session_id):
     
     try:
         # Get student session
-        student_session_response = supabase.table("StudentSession").select("*").eq("student_session_id", student_session_id).single().execute()
+        student_session_response = supabase.table("studentsession").select("*").eq("student_session_id", student_session_id).single().execute()
         
         if not student_session_response.data:
             return jsonify({"error": "Student session not found"}), 404
@@ -331,7 +331,7 @@ def edit_overall_feedback(student_session_id):
         ss = student_session_response.data
         
         # Get session
-        session_response = supabase.table("Session").select("*").eq("session_id", ss["session_id"]).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", ss["session_id"]).single().execute()
         session = session_response.data if session_response.data else {}
         
         # Verify lecturer is session creator
@@ -341,7 +341,7 @@ def edit_overall_feedback(student_session_id):
         # Update student session
         # Note: We might want to add a separate lecturer_feedback field
         # For now, we'll update ai_overall_feedback
-        supabase.table("StudentSession").update({
+        supabase.table("studentsession").update({
             "ai_overall_feedback": lecturer_feedback,
             "reviewed_by": lecturer_id,
             "reviewed_at": datetime.now().isoformat()
@@ -361,7 +361,7 @@ def recalculate_overall_score(student_session_id: int):
     """Recalculate overall score for a student session."""
     try:
         # Get all answers
-        answers_response = supabase.table("StudentAnswer").select("lecturer_score, ai_score").eq("student_session_id", student_session_id).execute()
+        answers_response = supabase.table("studentanswer").select("lecturer_score, ai_score").eq("student_session_id", student_session_id).execute()
         
         if not answers_response.data:
             return
@@ -379,7 +379,7 @@ def recalculate_overall_score(student_session_id: int):
             overall_score = sum(scores) / len(scores)
             
             # Update student session
-            supabase.table("StudentSession").update({
+            supabase.table("studentsession").update({
                 "score_total": overall_score
             }).eq("student_session_id", student_session_id).execute()
             

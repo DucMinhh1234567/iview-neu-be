@@ -26,7 +26,7 @@ def generate_questions():
     
     try:
         # Get session details
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -38,7 +38,7 @@ def generate_questions():
             return jsonify({"error": "Only session creator can generate questions"}), 403
         
         # Update session status
-        supabase.table("Session").update({"status": "generating_questions"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "generating_questions"}).eq("session_id", session_id).execute()
         
         # Generate questions
         questions = generate_questions_for_session(
@@ -53,16 +53,16 @@ def generate_questions():
         question_ids = []
         for question in questions:
             question["created_by"] = user_id
-            question_response = supabase.table("Question").insert(question).execute()
+            question_response = supabase.table("question").insert(question).execute()
             if question_response.data:
                 question_ids.append(question_response.data[0]["question_id"])
         
         # Update session status
-        supabase.table("Session").update({"status": "reviewing_questions"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "reviewing_questions"}).eq("session_id", session_id).execute()
         
         # Log AI request
         try:
-            supabase.table("AIRequestLog").insert({
+            supabase.table("airequestlog").insert({
                 "session_id": session_id,
                 "request_type": "GENERATE_QUESTION",
                 "request_payload": {"num_questions": len(question_ids)},
@@ -81,7 +81,7 @@ def generate_questions():
     except Exception as e:
         # Reset session status on error
         try:
-            supabase.table("Session").update({"status": "created"}).eq("session_id", session_id).execute()
+            supabase.table("session").update({"status": "created"}).eq("session_id", session_id).execute()
         except:
             pass
         return jsonify({"error": f"Failed to generate questions: {str(e)}"}), 500
@@ -94,7 +94,7 @@ def get_questions(session_id):
     status = request.args.get("status", "all")
     
     try:
-        query = supabase.table("Question").select("*").eq("session_id", session_id)
+        query = supabase.table("question").select("*").eq("session_id", session_id)
         
         if status != "all":
             query = query.eq("status", status)
@@ -122,7 +122,7 @@ def update_question(question_id):
     
     try:
         # Verify question exists
-        question_response = supabase.table("Question").select("*").eq("question_id", question_id).single().execute()
+        question_response = supabase.table("question").select("*").eq("question_id", question_id).single().execute()
         
         if not question_response.data:
             return jsonify({"error": "Question not found"}), 404
@@ -130,7 +130,7 @@ def update_question(question_id):
         question = question_response.data
         
         # Verify user is session creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", question["session_id"]).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", question["session_id"]).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can edit questions"}), 403
@@ -145,7 +145,7 @@ def update_question(question_id):
             update_data["difficulty"] = difficulty
         
         if update_data:
-            supabase.table("Question").update(update_data).eq("question_id", question_id).execute()
+            supabase.table("question").update(update_data).eq("question_id", question_id).execute()
         
         return jsonify({"message": "Question updated successfully"}), 200
         
@@ -159,7 +159,7 @@ def delete_question(question_id):
     """Delete a question (Lecturer only)."""
     try:
         # Verify question exists
-        question_response = supabase.table("Question").select("*").eq("question_id", question_id).single().execute()
+        question_response = supabase.table("question").select("*").eq("question_id", question_id).single().execute()
         
         if not question_response.data:
             return jsonify({"error": "Question not found"}), 404
@@ -167,13 +167,13 @@ def delete_question(question_id):
         question = question_response.data
         
         # Verify user is session creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", question["session_id"]).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", question["session_id"]).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can delete questions"}), 403
         
         # Delete question
-        supabase.table("Question").delete().eq("question_id", question_id).execute()
+        supabase.table("question").delete().eq("question_id", question_id).execute()
         
         return jsonify({"message": "Question deleted successfully"}), 200
         
@@ -194,13 +194,13 @@ def approve_questions():
     
     try:
         # Verify session and user is creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can approve questions"}), 403
         
         # Update questions status
-        query = supabase.table("Question").update({"status": "approved"}).eq("session_id", session_id).eq("status", "draft")
+        query = supabase.table("question").update({"status": "approved"}).eq("session_id", session_id).eq("status", "draft")
         
         if question_ids:
             query = query.in_("question_id", question_ids)
@@ -208,7 +208,7 @@ def approve_questions():
         query.execute()
         
         # Update session status
-        supabase.table("Session").update({"status": "generating_answers"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "generating_answers"}).eq("session_id", session_id).execute()
         
         return jsonify({
             "message": "Questions approved successfully",
@@ -233,7 +233,7 @@ def generate_answers():
     
     try:
         # Verify session and user is creator
-        session_response = supabase.table("Session").select("*").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
         
         if not session_response.data:
             return jsonify({"error": "Session not found"}), 404
@@ -244,7 +244,7 @@ def generate_answers():
         session = session_response.data
         
         # Get approved questions
-        query = supabase.table("Question").select("*").eq("session_id", session_id).eq("status", "approved")
+        query = supabase.table("question").select("*").eq("session_id", session_id).eq("status", "approved")
         
         if question_ids:
             query = query.in_("question_id", question_ids)
@@ -267,13 +267,13 @@ def generate_answers():
         
         # Update questions with reference answers
         for question_id, reference_answer in answer_map.items():
-            supabase.table("Question").update({
+            supabase.table("question").update({
                 "reference_answer": reference_answer,
                 "status": "answers_generated"
             }).eq("question_id", question_id).execute()
         
         # Update session status
-        supabase.table("Session").update({"status": "reviewing_answers"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "reviewing_answers"}).eq("session_id", session_id).execute()
         
         return jsonify({
             "question_ids": question_ids_list,
@@ -298,7 +298,7 @@ def update_reference_answer(question_id):
     
     try:
         # Verify question exists
-        question_response = supabase.table("Question").select("*").eq("question_id", question_id).single().execute()
+        question_response = supabase.table("question").select("*").eq("question_id", question_id).single().execute()
         
         if not question_response.data:
             return jsonify({"error": "Question not found"}), 404
@@ -306,13 +306,13 @@ def update_reference_answer(question_id):
         question = question_response.data
         
         # Verify user is session creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", question["session_id"]).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", question["session_id"]).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can edit answers"}), 403
         
         # Update reference answer
-        supabase.table("Question").update({
+        supabase.table("question").update({
             "reference_answer": reference_answer,
             "status": "answers_generated"
         }).eq("question_id", question_id).execute()
@@ -336,13 +336,13 @@ def approve_answers():
     
     try:
         # Verify session and user is creator
-        session_response = supabase.table("Session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can approve answers"}), 403
         
         # Update questions status
-        query = supabase.table("Question").update({"status": "answers_approved"}).eq("session_id", session_id).eq("status", "answers_generated")
+        query = supabase.table("question").update({"status": "answers_approved"}).eq("session_id", session_id).eq("status", "answers_generated")
         
         if question_ids:
             query = query.in_("question_id", question_ids)
@@ -350,7 +350,7 @@ def approve_answers():
         query.execute()
         
         # Update session status
-        supabase.table("Session").update({"status": "generating_script"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "generating_script"}).eq("session_id", session_id).execute()
         
         return jsonify({
             "message": "Reference answers approved successfully",

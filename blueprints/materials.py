@@ -51,7 +51,7 @@ def upload_material():
             "uploaded_by": user_id
         }
         
-        material_response = supabase.table("Material").insert(material_data).execute()
+        material_response = supabase.table("material").insert(material_data).execute()
         
         if not material_response.data:
             return jsonify({"error": "Failed to create material record"}), 500
@@ -62,7 +62,7 @@ def upload_material():
         file_info = StorageService.upload_file(file, material_id, file_type="material")
         
         # Update material with file info
-        supabase.table("Material").update({
+        supabase.table("material").update({
             "file_path": file_info["file_path"],
             "file_url": file_info["url"],
             "storage_type": file_info["storage_type"],
@@ -92,7 +92,7 @@ def upload_material():
         
         if not text or len(text.strip()) < 100:
             # Delete material if text extraction fails
-            supabase.table("Material").delete().eq("material_id", material_id).execute()
+            supabase.table("material").delete().eq("material_id", material_id).execute()
             return jsonify({"error": "PDF appears to be empty or unreadable"}), 400
         
         # Process with semantic chunking and embeddings
@@ -117,7 +117,7 @@ def upload_material():
             supabase.table("material_chunks").insert(batch).execute()
         
         # Update material with chunk count
-        supabase.table("Material").update({
+        supabase.table("material").update({
             "num_chunks": len(chunks)
         }).eq("material_id", material_id).execute()
         
@@ -139,7 +139,7 @@ def upload_material():
 def get_materials():
     """Get all materials. Students can view list, but only lecturers can download."""
     try:
-        materials_response = supabase.table("Material").select("*").order("created_at", desc=True).execute()
+        materials_response = supabase.table("material").select("*").order("created_at", desc=True).execute()
         
         if not materials_response.data:
             return jsonify([]), 200
@@ -159,7 +159,7 @@ def get_materials():
 def get_material(material_id):
     """Get material details (Lecturer only)."""
     try:
-        material_response = supabase.table("Material").select("*").eq("material_id", material_id).single().execute()
+        material_response = supabase.table("material").select("*").eq("material_id", material_id).single().execute()
         
         if not material_response.data:
             return jsonify({"error": "Material not found"}), 404
@@ -175,7 +175,7 @@ def get_material(material_id):
 def download_material(material_id):
     """Download material PDF file (Lecturer only)."""
     try:
-        material_response = supabase.table("Material").select("*").eq("material_id", material_id).single().execute()
+        material_response = supabase.table("material").select("*").eq("material_id", material_id).single().execute()
         
         if not material_response.data:
             return jsonify({"error": "Material not found"}), 404
@@ -202,7 +202,7 @@ def delete_material(material_id):
     """Delete material (Lecturer only)."""
     try:
         # Get material info
-        material_response = supabase.table("Material").select("*").eq("material_id", material_id).single().execute()
+        material_response = supabase.table("material").select("*").eq("material_id", material_id).single().execute()
         
         if not material_response.data:
             return jsonify({"error": "Material not found"}), 404
@@ -223,7 +223,7 @@ def delete_material(material_id):
         supabase.table("material_chunks").delete().eq("material_id", material_id).execute()
         
         # Delete material
-        supabase.table("Material").delete().eq("material_id", material_id).execute()
+        supabase.table("material").delete().eq("material_id", material_id).execute()
         
         return jsonify({"message": "Material deleted successfully"}), 200
         
