@@ -23,6 +23,7 @@ class Material:
         bucket_name: Optional[str] = None,
         uploaded_by: Optional[int] = None,
         num_chunks: int = 0,
+        is_public: bool = True,  # Add is_public parameter with default True
         created_at: Optional[datetime] = None
     ):
         self.material_id = material_id
@@ -34,6 +35,7 @@ class Material:
         self.bucket_name = bucket_name
         self.uploaded_by = uploaded_by
         self.num_chunks = num_chunks
+        self.is_public = is_public  # Add is_public attribute
         self.created_at = created_at or datetime.now()
     
     @classmethod
@@ -49,6 +51,7 @@ class Material:
             bucket_name=data.get("bucket_name"),
             uploaded_by=data.get("uploaded_by"),
             num_chunks=data.get("num_chunks", 0),
+            is_public=data.get("is_public", True),  # Add is_public with default True
             created_at=data.get("created_at")
         )
     
@@ -64,6 +67,7 @@ class Material:
             "bucket_name": self.bucket_name,
             "uploaded_by": self.uploaded_by,
             "num_chunks": self.num_chunks,
+            "is_public": self.is_public,  # Add is_public to dictionary
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 

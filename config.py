@@ -43,8 +43,8 @@ MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # Convert to bytes
 # Supabase Storage buckets
 SUPABASE_STORAGE_BUCKETS = {
     "materials": "materials",  # Public bucket
-    "cvs": "private",          # Private bucket
-    "jds": "private"           # Private bucket
+    "cv": "private",           # Private bucket (for CV uploads)
+    "jd": "private"            # Private bucket (for JD uploads)
 }
 
 # Gemini

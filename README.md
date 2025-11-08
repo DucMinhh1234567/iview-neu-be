@@ -49,8 +49,14 @@ cp env.example .env
 2. Enable pgvector extension: `CREATE EXTENSION IF NOT EXISTS vector;`
 3. Run migration script từ `.docs/supabase.sql` (đã được update)
 4. Tạo storage buckets:
-   - `materials` (public)
-   - `private` (private, cho CVs và JDs)
+   - Vào Supabase Dashboard → Storage
+   - Tạo bucket `materials`:
+     - Name: `materials`
+     - Public: ✅ **Yes** (public bucket)
+   - Tạo bucket `private`:
+     - Name: `private`
+     - Public: ❌ **No** (private bucket, cho CVs và JDs)
+     - **Quan trọng:** Bucket này bắt buộc phải có để upload CV/JD
 
 ### 6. Chạy ứng dụng
 

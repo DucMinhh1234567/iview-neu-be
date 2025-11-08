@@ -21,6 +21,7 @@ def upload_material():
     file = request.files.get("file")
     title = request.form.get("title")
     description = request.form.get("description", "")
+    is_public = request.form.get("is_public", "true").lower() == "true"  # Default to True
     user_id = request.user_id
     
     if not file:
@@ -48,7 +49,8 @@ def upload_material():
         material_data = {
             "title": title,
             "source_type": "UPLOAD",
-            "uploaded_by": user_id
+            "uploaded_by": user_id,
+            "is_public": is_public  # Add is_public field
         }
         
         material_response = supabase.table("material").insert(material_data).execute()
@@ -126,7 +128,8 @@ def upload_material():
             "title": title,
             "num_chunks": len(chunks),
             "file_url": file_info["url"],
-            "storage_type": file_info["storage_type"]
+            "storage_type": file_info["storage_type"],
+            "is_public": is_public  # Return is_public in response
         }), 200
         
     except Exception as e:
