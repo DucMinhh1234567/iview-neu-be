@@ -2,6 +2,8 @@
 Vector search utility for pgvector semantic similarity search.
 """
 from typing import List, Dict, Any, Optional
+import json
+import math
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from extensions.supabase_client import supabase
 
@@ -69,7 +71,6 @@ def query_similar_chunks(
         
         # Compute cosine similarity in Python
         # Note: For production, consider creating a PostgreSQL function for vector search
-        import math
         
         query_vec = query_embedding
         query_norm = math.sqrt(sum(x * x for x in query_vec))
@@ -77,6 +78,16 @@ def query_similar_chunks(
         
         for chunk in chunks_response.data:
             embedding = chunk.get("embedding")
+            
+            # Parse embedding if it's a string (JSON format from Supabase)
+            # Supabase returns pgvector embeddings as JSON strings
+            if isinstance(embedding, str):
+                try:
+                    embedding = json.loads(embedding)
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(f"Warning: Failed to parse embedding for chunk {chunk.get('id')}: {e}")
+                    continue
+            
             if not embedding or not isinstance(embedding, list):
                 continue
             

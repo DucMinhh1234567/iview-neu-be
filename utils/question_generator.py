@@ -109,7 +109,7 @@ def generate_reference_answers_for_questions(
     """
     try:
         # Get questions
-        questions_response = supabase.table("Question").select("*").in_("question_id", question_ids).execute()
+        questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
         
         if not questions_response.data:
             raise Exception("Questions not found")
