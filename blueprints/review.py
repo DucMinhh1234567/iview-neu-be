@@ -406,4 +406,3 @@ def recalculate_overall_score(student_session_id: int):
             
     except Exception as e:
         print(f"Error recalculating overall score: {e}")
-
