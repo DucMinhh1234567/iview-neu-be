@@ -140,7 +140,8 @@ def start_session(student_session_id):
                     # Continue anyway - questions might be generated later
         
         # Get total questions count
-        questions_response = supabase.table("question").select("question_id").eq("session_id", session["session_id"]).eq("status", "approved").execute()
+        # Questions can have status "approved" or "answers_approved" - both are valid for students
+        questions_response = supabase.table("question").select("question_id").eq("session_id", session["session_id"]).in_("status", ["approved", "answers_approved"]).execute()
         total_questions = len(questions_response.data or [])
         
         if total_questions == 0:
@@ -181,8 +182,8 @@ def get_next_question(student_session_id):
         answered_response = supabase.table("studentanswer").select("question_id").eq("student_session_id", student_session_id).execute()
         answered_question_ids = [a["question_id"] for a in (answered_response.data or [])]
         
-        # Get all approved questions
-        all_questions_response = supabase.table("question").select("*").eq("session_id", session_id).eq("status", "approved").execute()
+        # Get all approved questions (both "approved" and "answers_approved" status)
+        all_questions_response = supabase.table("question").select("*").eq("session_id", session_id).in_("status", ["approved", "answers_approved"]).execute()
         all_questions = all_questions_response.data or []
         
         # Filter out already answered questions
