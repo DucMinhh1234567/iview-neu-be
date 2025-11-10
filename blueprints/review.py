@@ -62,23 +62,44 @@ def get_session_students(session_id):
         if not student_sessions_response.data:
             return jsonify([]), 200
         
+        # Optimize: Get all student info in batch
+        student_ids = [ss["student_id"] for ss in student_sessions_response.data]
+        students_dict = {}
+        
+        if student_ids:
+            try:
+                # Get all students at once
+                students_response = supabase.table("student").select("*, User(*)").in_("student_id", student_ids).execute()
+                
+                if students_response.data:
+                    for student_data in students_response.data:
+                        student_id = student_data.get("student_id")
+                        user_data = student_data.get("User", {})
+                        if isinstance(user_data, dict):
+                            students_dict[student_id] = {
+                                "student_code": student_data.get("student_code", ""),
+                                "student_name": user_data.get("full_name", "")
+                            }
+                        else:
+                            students_dict[student_id] = {
+                                "student_code": student_data.get("student_code", ""),
+                                "student_name": ""
+                            }
+            except Exception as e:
+                print(f"Warning: Failed to get student info in batch: {e}")
+                # Fall back to empty dict, will show N/A for names
+        
         # Format response with student info
         students = []
         for ss in student_sessions_response.data:
-            # Get student info
-            student_response = supabase.table("student").select("*, User(*)").eq("student_id", ss["student_id"]).single().execute()
-            
-            student_data = {}
-            user_data = {}
-            if student_response.data:
-                student_data = student_response.data
-                user_data = student_data.get("User", {}) if isinstance(student_data.get("User"), dict) else {}
+            student_id = ss["student_id"]
+            student_info = students_dict.get(student_id, {})
             
             students.append({
                 "student_session_id": ss["student_session_id"],
-                "student_id": ss["student_id"],
-                "student_name": user_data.get("full_name", "") if user_data else "",
-                "student_code": student_data.get("student_code", ""),
+                "student_id": student_id,
+                "student_name": student_info.get("student_name", ""),
+                "student_code": student_info.get("student_code", ""),
                 "score_total": ss.get("score_total"),
                 "join_time": ss.get("join_time"),
                 "reviewed_by": ss.get("reviewed_by"),
@@ -385,4 +406,3 @@ def recalculate_overall_score(student_session_id: int):
             
     except Exception as e:
         print(f"Error recalculating overall score: {e}")
-
