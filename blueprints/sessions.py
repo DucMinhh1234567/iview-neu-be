@@ -275,13 +275,49 @@ def get_sessions():
         elif user_role == "LECTURER":
             query = query.eq("created_by", user_id)
         
-        # Order by created_at desc
+        # Order by created_at desc and limit to prevent timeout with too many sessions
+        # Default limit to 100 sessions, can be increased if needed
+        limit = request.args.get("limit", type=int)
+        if limit:
+            query = query.limit(limit)
+        else:
+            query = query.limit(100)  # Default limit to prevent timeout
+        
         sessions_response = query.order("created_at", desc=True).execute()
         
         if not sessions_response.data:
             return jsonify([]), 200
         
-        return jsonify(sessions_response.data), 200
+        sessions = sessions_response.data
+        session_ids = [s["session_id"] for s in sessions]
+        
+        # Optimize: Get all student counts in one query instead of per session
+        # Get all student sessions for these session IDs
+        student_counts = {}
+        if session_ids:
+            try:
+                # Query all student sessions for these sessions at once
+                student_sessions_response = supabase.table("studentsession").select("session_id").in_("session_id", session_ids).execute()
+                
+                # Count students per session
+                if student_sessions_response.data:
+                    for ss in student_sessions_response.data:
+                        session_id = ss["session_id"]
+                        student_counts[session_id] = student_counts.get(session_id, 0) + 1
+            except Exception as e:
+                # If batch query fails, fall back to 0 for all
+                print(f"Warning: Failed to get student counts: {e}")
+        
+        # Add student count to each session
+        sessions_with_counts = []
+        for session in sessions:
+            session_id = session["session_id"]
+            sessions_with_counts.append({
+                **session,
+                "student_count": student_counts.get(session_id, 0)
+            })
+        
+        return jsonify(sessions_with_counts), 200
         
     except Exception as e:
         return jsonify({"error": f"Failed to get sessions: {str(e)}"}), 500
@@ -298,6 +334,16 @@ def get_session(session_id):
             return jsonify({"error": "Session not found"}), 404
         
         session = session_response.data
+        
+        # Get student count
+        student_sessions_response = supabase.table("studentsession").select("student_session_id").eq("session_id", session_id).execute()
+        student_count = len(student_sessions_response.data or [])
+        session["student_count"] = student_count
+        
+        # Get questions count
+        questions_response = supabase.table("question").select("question_id").eq("session_id", session_id).execute()
+        questions_count = len(questions_response.data or [])
+        session["questions_count"] = questions_count
         
         # Get interview config if INTERVIEW session
         if session["session_type"] == "INTERVIEW":
@@ -521,4 +567,3 @@ def finalize_session(session_id):
         
     except Exception as e:
         return jsonify({"error": f"Failed to finalize session: {str(e)}"}), 500
-
