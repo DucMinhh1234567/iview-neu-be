@@ -5,7 +5,6 @@ from flask import Blueprint, request, jsonify
 from extensions.supabase_client import supabase
 from extensions.auth_middleware import require_auth, require_lecturer
 from utils.question_generator import generate_questions_for_session, generate_reference_answers_for_questions
-from extensions.llm import call_llm_json, prompt_generate_script
 from config import BATCH_SIZE
 
 questions_bp = Blueprint("questions", __name__)
@@ -46,7 +45,8 @@ def generate_questions():
             material_id=session.get("material_id"),
             course_name=session.get("course_name"),
             difficulty_level=session.get("difficulty_level", "APPLY"),
-            num_questions=num_questions or BATCH_SIZE
+            num_questions=num_questions or BATCH_SIZE,
+            session_type=session.get("session_type")
         )
         
         # Insert questions into database
@@ -262,7 +262,8 @@ def generate_answers():
             session_id=session_id,
             question_ids=question_ids_list,
             material_id=session.get("material_id"),
-            course_name=session.get("course_name")
+            course_name=session.get("course_name"),
+            session_type=session.get("session_type")
         )
         
         # Update questions with reference answers
@@ -350,12 +351,12 @@ def approve_answers():
         query.execute()
         
         # Update session status
-        supabase.table("session").update({"status": "generating_script"}).eq("session_id", session_id).execute()
+        supabase.table("session").update({"status": "answers_approved"}).eq("session_id", session_id).execute()
         
         return jsonify({
             "message": "Reference answers approved successfully",
             "status": "answers_approved",
-            "next_step": "generate_script"
+            "next_step": "finalize_session"
         }), 200
         
     except Exception as e:

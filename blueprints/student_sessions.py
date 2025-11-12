@@ -127,7 +127,8 @@ def start_session(student_session_id):
                         session_id=session["session_id"],
                         material_id=session.get("material_id"),
                         course_name=session.get("course_name"),
-                        difficulty_level=session.get("difficulty_level", "APPLY")
+                        difficulty_level=session.get("difficulty_level", "APPLY"),
+                        session_type=session.get("session_type")
                     )
                     
                     # Insert questions
@@ -269,7 +270,8 @@ def submit_answer(student_session_id):
                         session_id=question["session_id"],
                         question_ids=[question_id],
                         material_id=session.get("material_id"),
-                        course_name=session.get("course_name")
+                        course_name=session.get("course_name"),
+                        session_type=session.get("session_type")
                     )
                     reference_answer = answer_map.get(question_id, "")
                     
@@ -346,6 +348,10 @@ def end_session(student_session_id):
         
         session_id = student_session["session_id"]
         
+        session_response = supabase.table("session").select("session_type, material_id, course_name").eq("session_id", session_id).single().execute()
+        session = session_response.data if session_response.data else {}
+        session_type = session.get("session_type")
+        
         # Get all answers
         answers_response = supabase.table("studentanswer").select("*").eq("student_session_id", student_session_id).execute()
         
@@ -363,24 +369,21 @@ def end_session(student_session_id):
         requires_evaluation = any(answer.get("ai_score") is None for answer in answers)
         
         if requires_evaluation:
-            # Fetch session details for reference answer generation
-            session_response = supabase.table("session").select("session_type, material_id, course_name").eq("session_id", session_id).single().execute()
-            session = session_response.data if session_response.data else {}
-            
             # Generate reference answers for missing ones
             missing_reference_ids = [
                 q_id for q_id, question in questions_dict.items()
                 if question and not question.get("reference_answer")
             ]
             
-            if missing_reference_ids and session.get("session_type") in ["PRACTICE", "INTERVIEW"]:
+            if missing_reference_ids and session_type in ["PRACTICE", "INTERVIEW"]:
                 try:
                     from utils.question_generator import generate_reference_answers_for_questions
                     answer_map = generate_reference_answers_for_questions(
                         session_id=session_id,
                         question_ids=missing_reference_ids,
                         material_id=session.get("material_id"),
-                        course_name=session.get("course_name")
+                        course_name=session.get("course_name"),
+                        session_type=session_type
                     )
                     
                     for q_id, ref_answer in answer_map.items():
@@ -406,7 +409,8 @@ def end_session(student_session_id):
                     question=question.get("content", ""),
                     student_answer=answer.get("answer_text", ""),
                     reference_answer=reference_answer,
-                    difficulty=question.get("difficulty", "MEDIUM")
+                    difficulty=question.get("difficulty", "MEDIUM"),
+                    session_type=session_type
                 )
                 
                 supabase.table("studentanswer").update({
@@ -471,7 +475,7 @@ def end_session(student_session_id):
             scores_summary = {k: v / answered_count for k, v in scores_summary.items()}
         
         # Generate overall feedback
-        overall_feedback_data = generate_overall_feedback(qa_pairs, scores_summary)
+        overall_feedback_data = generate_overall_feedback(qa_pairs, scores_summary, session_type=session_type)
         
         # Update student session
         supabase.table("studentsession").update({

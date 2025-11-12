@@ -1,11 +1,42 @@
 """
 Question generation utilities using AI.
 """
-from typing import List, Dict, Any, Optional
-from extensions.llm import call_llm_json, prompt_generate_batch_questions, prompt_generate_reference_answers
+from typing import Any, Dict, List, Optional, Protocol
+
+from extensions import llm_interview, llm_vandap
+from extensions.llm_core import call_llm_json
 from utils.vector_search import search_for_question_generation
-from utils.bloom_taxonomy import bloom_to_difficulty, get_included_levels
+from utils.bloom_taxonomy import bloom_to_difficulty
 from extensions.supabase_client import supabase
+
+
+class QuestionPromptModule(Protocol):
+    """Protocol describing required prompt helpers."""
+
+    def prompt_generate_batch_questions(
+        self,
+        context_chunks: List[Dict[str, str]],
+        difficulty: str,
+        course_name: Optional[str] = None,
+        additional_requirements: Optional[str] = None,
+        num_questions: Optional[int] = None,
+    ) -> str:
+        ...
+
+    def prompt_generate_reference_answers(
+        self,
+        questions: List[Dict[str, str]],
+        context_chunks: List[Dict[str, str]],
+        course_name: Optional[str] = None,
+    ) -> str:
+        ...
+
+
+def _select_prompt_module(session_type: Optional[str]) -> QuestionPromptModule:
+    """Select appropriate prompt module based on session type."""
+    if (session_type or "").upper() == "INTERVIEW":
+        return llm_interview
+    return llm_vandap
 
 
 def generate_questions_for_session(
@@ -13,7 +44,8 @@ def generate_questions_for_session(
     material_id: Optional[int] = None,
     course_name: Optional[str] = None,
     difficulty_level: str = "APPLY",
-    num_questions: Optional[int] = None
+    num_questions: Optional[int] = None,
+    session_type: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Generate questions for a session using AI.
@@ -24,11 +56,14 @@ def generate_questions_for_session(
         course_name: Course name (for general knowledge if no material)
         difficulty_level: Bloom taxonomy level
         num_questions: Number of questions to generate
+        session_type: Session context (INTERVIEW, PRACTICE, EXAM, ...)
         
     Returns:
         List of generated questions
     """
     try:
+        prompt_module = _select_prompt_module(session_type)
+
         # Get context chunks if material is provided
         context_chunks = []
         if material_id:
@@ -52,7 +87,7 @@ def generate_questions_for_session(
             chunks_for_prompt = []
         
         # Generate questions using AI
-        prompt = prompt_generate_batch_questions(
+        prompt = prompt_module.prompt_generate_batch_questions(
             context_chunks=chunks_for_prompt,
             difficulty=difficulty_level,
             course_name=course_name,
@@ -71,7 +106,7 @@ def generate_questions_for_session(
         question_difficulty = bloom_to_difficulty(difficulty_level)
         
         # Format questions for database
-        formatted_questions = []
+        formatted_questions: List[Dict[str, Any]] = []
         for q in questions:
             formatted_questions.append({
                 "session_id": session_id,
@@ -84,7 +119,7 @@ def generate_questions_for_session(
         
         return formatted_questions
         
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - bubble up handled error
         print(f"Question generation error: {e}")
         raise
 
@@ -93,7 +128,8 @@ def generate_reference_answers_for_questions(
     session_id: int,
     question_ids: List[int],
     material_id: Optional[int] = None,
-    course_name: Optional[str] = None
+    course_name: Optional[str] = None,
+    session_type: Optional[str] = None,
 ) -> Dict[int, str]:
     """
     Generate reference answers for approved questions.
@@ -103,11 +139,14 @@ def generate_reference_answers_for_questions(
         question_ids: List of question IDs
         material_id: Material ID (optional)
         course_name: Course name (optional)
+        session_type: Session context (INTERVIEW, PRACTICE, EXAM, ...)
         
     Returns:
         Dictionary mapping question_id to reference_answer
     """
     try:
+        prompt_module = _select_prompt_module(session_type)
+
         # Get questions
         questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
         
@@ -137,7 +176,7 @@ def generate_reference_answers_for_questions(
         ]
         
         # Generate reference answers using AI
-        prompt = prompt_generate_reference_answers(
+        prompt = prompt_module.prompt_generate_reference_answers(
             questions=questions_for_prompt,
             context_chunks=context_chunks,
             course_name=course_name
@@ -152,7 +191,7 @@ def generate_reference_answers_for_questions(
         answers = response["answers"]
         
         # Map answers to question IDs
-        answer_map = {}
+        answer_map: Dict[int, str] = {}
         for i, answer_data in enumerate(answers):
             question_index = answer_data.get("question_index", i)
             if question_index < len(questions):
@@ -161,7 +200,7 @@ def generate_reference_answers_for_questions(
         
         return answer_map
         
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - bubble up handled error
         print(f"Reference answer generation error: {e}")
         raise
 

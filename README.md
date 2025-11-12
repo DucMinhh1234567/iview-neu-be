@@ -96,8 +96,10 @@ be/
 │   └── review.py
 │
 ├── extensions/              # Core integrations
+│   ├── llm_core.py
+│   ├── llm_interview.py
+│   ├── llm_vandap.py
 │   ├── supabase_client.py
-│   ├── llm.py
 │   └── auth_middleware.py
 │
 ├── utils/                   # Utilities
@@ -148,9 +150,6 @@ be/
 - `POST /api/questions/approve-answers` - Approve answers
 
 ### Session Script
-- `POST /api/sessions/<id>/generate-script` - Generate script
-- `GET /api/sessions/<id>/script` - Get script
-- `PUT /api/sessions/<id>/script` - Edit script
 - `POST /api/sessions/<id>/finalize` - Finalize session
 
 ### Student Sessions
@@ -178,9 +177,7 @@ be/
 4. Generate reference answers
 5. Lecturer reviews & edits answers
 6. Approve answers
-7. Generate opening/closing script
-8. Lecturer reviews & edits script
-9. Finalize session
+7. Finalize session
 
 ### Student Participation Flow
 1. Join session (password validation)

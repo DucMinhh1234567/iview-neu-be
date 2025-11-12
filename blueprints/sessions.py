@@ -429,52 +429,10 @@ def delete_session(session_id):
 @sessions_bp.route("/<int:session_id>/generate-script", methods=["POST"])
 @require_lecturer
 def generate_script(session_id):
-    """Generate opening and closing script for session."""
-    try:
-        # Get session details
-        session_response = supabase.table("session").select("*").eq("session_id", session_id).single().execute()
-        
-        if not session_response.data:
-            return jsonify({"error": "Session not found"}), 404
-        
-        session = session_response.data
-        
-        # Verify user is creator
-        if session["created_by"] != request.user_id:
-            return jsonify({"error": "Only session creator can generate script"}), 403
-        
-        # Generate script using AI
-        from extensions.llm import prompt_generate_script, call_llm_json
-        
-        prompt = prompt_generate_script(
-            session_name=session["session_name"],
-            course_name=session.get("course_name"),
-            difficulty_level=session.get("difficulty_level"),
-            session_type=session["session_type"]
-        )
-        
-        response = call_llm_json(prompt)
-        
-        opening_script = response.get("opening_script", "")
-        closing_script = response.get("closing_script", "")
-        
-        # Update session with scripts
-        supabase.table("session").update({
-            "opening_script": opening_script,
-            "closing_script": closing_script,
-            "status": "reviewing_script"
-        }).eq("session_id", session_id).execute()
-        
-        return jsonify({
-            "session_id": session_id,
-            "opening_script": opening_script,
-            "closing_script": closing_script,
-            "status": "script_generated",
-            "next_step": "review_script"
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"error": f"Failed to generate script: {str(e)}"}), 500
+    """Generate opening and closing script for session (feature removed)."""
+    return jsonify({
+        "error": "AI script generation is no longer supported."
+    }), 410
 
 
 @sessions_bp.route("/<int:session_id>/script", methods=["GET"])
@@ -546,12 +504,6 @@ def finalize_session(session_id):
         for q in questions:
             if not q.get("reference_answer") or q.get("status") != "answers_approved":
                 return jsonify({"error": "All questions must have approved reference answers"}), 400
-        
-        # Check if scripts are present
-        session_full = supabase.table("session").select("opening_script, closing_script").eq("session_id", session_id).single().execute()
-        
-        if not session_full.data.get("opening_script") or not session_full.data.get("closing_script"):
-            return jsonify({"error": "Opening and closing scripts are required"}), 400
         
         # Update session status to ready
         supabase.table("session").update({
