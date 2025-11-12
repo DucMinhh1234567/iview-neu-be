@@ -219,7 +219,7 @@ def get_next_question(student_session_id):
 @student_sessions_bp.route("/<int:student_session_id>/answer", methods=["POST"])
 @require_student
 def submit_answer(student_session_id):
-    """Submit answer for a question (with AI evaluation)."""
+    """Submit answer for a question (store only, AI evaluation deferred)."""
     data = request.get_json()
     question_id = data.get("question_id")
     answer_text = data.get("answer")
@@ -251,9 +251,7 @@ def submit_answer(student_session_id):
         
         # Check if already answered
         existing_answer_response = supabase.table("studentanswer").select("answer_id").eq("student_session_id", student_session_id).eq("question_id", question_id).execute()
-        
-        if existing_answer_response.data:
-            return jsonify({"error": "Question already answered"}), 400
+        existing_answer = existing_answer_response.data[0] if existing_answer_response.data else None
         
         # Get reference answer (if available)
         reference_answer = question.get("reference_answer", "")
@@ -284,40 +282,28 @@ def submit_answer(student_session_id):
                     print(f"Warning: Failed to generate reference answer: {e}")
                     reference_answer = ""  # Continue without reference answer
         
-        # Evaluate answer using AI
-        evaluation = evaluate_answer(
-            question=question["content"],
-            student_answer=answer_text,
-            reference_answer=reference_answer if reference_answer else "No reference answer available. Evaluate based on the question and student's answer.",
-            difficulty=question.get("difficulty", "MEDIUM")
-        )
-        
-        # Save answer with evaluation
-        answer_data = {
-            "student_session_id": student_session_id,
-            "question_id": question_id,
-            "answer_text": answer_text,
-            "ai_score": evaluation["overall_score"],
-            "ai_feedback": evaluation["feedback"]
-        }
-        
-        answer_response = supabase.table("studentanswer").insert(answer_data).execute()
-        
-        if not answer_response.data:
-            return jsonify({"error": "Failed to save answer"}), 500
-        
-        answer_id = answer_response.data[0]["answer_id"]
-        
-        # Log AI request
-        try:
-            supabase.table("airequestlog").insert({
-                "session_id": student_session["session_id"],
-                "request_type": "EVALUATE_ANSWER",
-                "request_payload": {"question_id": question_id, "answer_length": len(answer_text)},
-                "response_payload": {"score": evaluation["overall_score"], "feedback_length": len(evaluation["feedback"])}
-            }).execute()
-        except:
-            pass
+        if existing_answer:
+            answer_id = existing_answer["answer_id"]
+            supabase.table("studentanswer").update({
+                "answer_text": answer_text,
+                "ai_score": None,
+                "ai_feedback": None
+            }).eq("answer_id", answer_id).execute()
+        else:
+            answer_data = {
+                "student_session_id": student_session_id,
+                "question_id": question_id,
+                "answer_text": answer_text,
+                "ai_score": None,
+                "ai_feedback": None
+            }
+            
+            answer_response = supabase.table("studentanswer").insert(answer_data).execute()
+            
+            if not answer_response.data:
+                return jsonify({"error": "Failed to save answer"}), 500
+            
+            answer_id = answer_response.data[0]["answer_id"]
         
         # Check if there are more questions
         answered_response = supabase.table("studentanswer").select("question_id").eq("student_session_id", student_session_id).execute()
@@ -327,14 +313,14 @@ def submit_answer(student_session_id):
         all_questions_response = supabase.table("question").select("question_id").eq("session_id", question["session_id"]).eq("status", "approved").execute()
         total_questions = len(all_questions_response.data or [])
         
-        return jsonify({
+        response_payload = {
             "answer_id": answer_id,
-            "ai_score": evaluation["overall_score"],
-            "ai_feedback": evaluation["feedback"],
             "next_question_available": answered_count < total_questions,
             "answered_count": answered_count,
             "total_questions": total_questions
-        }), 200
+        }
+        
+        return jsonify(response_payload), 200
         
     except Exception as e:
         return jsonify({"error": f"Failed to submit answer: {str(e)}"}), 500
@@ -373,9 +359,87 @@ def end_session(student_session_id):
         questions_response = supabase.table("question").select("*").in_("question_id", question_ids).execute()
         questions_dict = {q["question_id"]: q for q in (questions_response.data or [])}
         
+        # Determine if evaluation is needed
+        requires_evaluation = any(answer.get("ai_score") is None for answer in answers)
+        
+        if requires_evaluation:
+            # Fetch session details for reference answer generation
+            session_response = supabase.table("session").select("session_type, material_id, course_name").eq("session_id", session_id).single().execute()
+            session = session_response.data if session_response.data else {}
+            
+            # Generate reference answers for missing ones
+            missing_reference_ids = [
+                q_id for q_id, question in questions_dict.items()
+                if question and not question.get("reference_answer")
+            ]
+            
+            if missing_reference_ids and session.get("session_type") in ["PRACTICE", "INTERVIEW"]:
+                try:
+                    from utils.question_generator import generate_reference_answers_for_questions
+                    answer_map = generate_reference_answers_for_questions(
+                        session_id=session_id,
+                        question_ids=missing_reference_ids,
+                        material_id=session.get("material_id"),
+                        course_name=session.get("course_name")
+                    )
+                    
+                    for q_id, ref_answer in answer_map.items():
+                        if ref_answer:
+                            supabase.table("question").update({
+                                "reference_answer": ref_answer
+                            }).eq("question_id", q_id).execute()
+                            if questions_dict.get(q_id):
+                                questions_dict[q_id]["reference_answer"] = ref_answer
+                except Exception as e:
+                    print(f"Warning: Failed to generate reference answers during evaluation: {e}")
+            
+            # Evaluate each answer now that all are collected
+            for answer in answers:
+                question = questions_dict.get(answer["question_id"], {})
+                
+                if not question:
+                    continue
+                
+                reference_answer = question.get("reference_answer") or "No reference answer available. Evaluate based on the question and student's answer."
+                
+                evaluation = evaluate_answer(
+                    question=question.get("content", ""),
+                    student_answer=answer.get("answer_text", ""),
+                    reference_answer=reference_answer,
+                    difficulty=question.get("difficulty", "MEDIUM")
+                )
+                
+                supabase.table("studentanswer").update({
+                    "ai_score": evaluation["overall_score"],
+                    "ai_feedback": evaluation["feedback"]
+                }).eq("answer_id", answer["answer_id"]).execute()
+                
+                # Update local copy to include evaluation results
+                answer["ai_score"] = evaluation["overall_score"]
+                answer["ai_feedback"] = evaluation["feedback"]
+                answer["ai_scores_breakdown"] = evaluation.get("scores", {})
+                
+                # Log AI request
+                try:
+                    supabase.table("airequestlog").insert({
+                        "session_id": session_id,
+                        "request_type": "EVALUATE_ANSWER",
+                        "request_payload": {
+                            "question_id": answer["question_id"],
+                            "answer_length": len(answer.get("answer_text") or "")
+                        },
+                        "response_payload": {
+                            "score": evaluation["overall_score"],
+                            "feedback_length": len(evaluation["feedback"] or "")
+                        }
+                    }).execute()
+                except Exception:
+                    pass
+        
         # Calculate overall score
-        total_score = sum(a["ai_score"] for a in answers if a.get("ai_score"))
-        overall_score = total_score / len(answers) if answers else 0.0
+        total_score = sum((a.get("ai_score") or 0.0) for a in answers)
+        answered_count = len(answers)
+        overall_score = total_score / answered_count if answered_count else 0.0
         
         # Prepare Q&A pairs for overall feedback
         qa_pairs = []
@@ -396,6 +460,15 @@ def end_session(student_session_id):
                 "score": answer.get("ai_score", 0.0),
                 "feedback": answer.get("ai_feedback", "")
             })
+            
+            breakdown = answer.get("ai_scores_breakdown") or {}
+            for criterion in scores_summary:
+                value = breakdown.get(criterion)
+                if isinstance(value, (int, float)):
+                    scores_summary[criterion] += float(value)
+        
+        if answered_count:
+            scores_summary = {k: v / answered_count for k, v in scores_summary.items()}
         
         # Generate overall feedback
         overall_feedback_data = generate_overall_feedback(qa_pairs, scores_summary)
