@@ -294,7 +294,7 @@ def update_reference_answer(question_id):
     data = request.get_json()
     reference_answer = data.get("reference_answer")
     
-    if not reference_answer:
+    if not reference_answer or not reference_answer.strip():
         return jsonify({"error": "Reference answer is required"}), 400
     
     try:
@@ -307,15 +307,35 @@ def update_reference_answer(question_id):
         question = question_response.data
         
         # Verify user is session creator
-        session_response = supabase.table("session").select("created_by").eq("session_id", question["session_id"]).single().execute()
+        session_response = supabase.table("session").select("created_by, status").eq("session_id", question["session_id"]).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can edit answers"}), 403
         
-        # Update reference answer
+        # Check if question is in a state that allows answer creation/editing
+        question_status = question.get("status")
+        session_status = session_response.data.get("status")
+        
+        # Allow creating/editing answers if:
+        # 1. Question is approved (can create new answer)
+        # 2. Question has answers_generated status (can edit existing answer)
+        # 3. Question has answers_approved status (can edit existing answer)
+        # 4. Session is in reviewing_answers or ready status
+        if question_status not in ["approved", "answers_generated", "answers_approved"]:
+            return jsonify({"error": "Can only create/edit answers for approved questions"}), 400
+        
+        if session_status not in ["reviewing_answers", "ready", "generating_answers"]:
+            return jsonify({"error": "Can only create/edit answers when session is in reviewing_answers or ready status"}), 400
+        
+        # Update reference answer (create if doesn't exist, update if exists)
+        # If question was answers_approved and we're editing, set back to answers_generated so it can be re-approved
+        # If question was approved (no answer yet), set to answers_generated
+        # If question was answers_generated, keep as answers_generated
+        new_status = "answers_generated" if question_status == "approved" or question_status == "answers_approved" else question_status
+        
         supabase.table("question").update({
             "reference_answer": reference_answer,
-            "status": "answers_generated"
+            "status": new_status
         }).eq("question_id", question_id).execute()
         
         return jsonify({"message": "Reference answer updated successfully"}), 200
@@ -327,7 +347,7 @@ def update_reference_answer(question_id):
 @questions_bp.route("/approve-answers", methods=["POST"])
 @require_lecturer
 def approve_answers():
-    """Approve reference answers (move to answers_approved)."""
+    """Approve reference answers (move to answers_approved, then ready if all approved)."""
     data = request.get_json()
     session_id = data.get("session_id")
     question_ids = data.get("question_ids")  # Optional
@@ -350,13 +370,33 @@ def approve_answers():
         
         query.execute()
         
-        # Update session status
-        supabase.table("session").update({"status": "answers_approved"}).eq("session_id", session_id).execute()
+        # Check if all questions with answers are approved
+        all_questions_response = supabase.table("question").select("question_id, status, reference_answer").eq("session_id", session_id).execute()
+        all_questions = all_questions_response.data or []
+        
+        # Filter questions that have reference answers
+        questions_with_answers = [q for q in all_questions if q.get("reference_answer")]
+        
+        # Check if all questions with answers are approved
+        all_approved = len(questions_with_answers) > 0 and all(
+            q.get("status") == "answers_approved" for q in questions_with_answers
+        )
+        
+        # Update session status: if all answers approved, set to ready; otherwise, keep reviewing_answers
+        if all_approved:
+            supabase.table("session").update({"status": "ready"}).eq("session_id", session_id).execute()
+            new_status = "ready"
+            next_step = "session_ready"
+        else:
+            supabase.table("session").update({"status": "reviewing_answers"}).eq("session_id", session_id).execute()
+            new_status = "reviewing_answers"
+            next_step = "continue_reviewing_answers"
         
         return jsonify({
             "message": "Reference answers approved successfully",
-            "status": "answers_approved",
-            "next_step": "finalize_session"
+            "status": new_status,
+            "next_step": next_step,
+            "all_approved": all_approved
         }), 200
         
     except Exception as e:

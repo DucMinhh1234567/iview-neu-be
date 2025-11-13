@@ -485,25 +485,41 @@ def update_script(session_id):
 @sessions_bp.route("/<int:session_id>/finalize", methods=["POST"])
 @require_lecturer
 def finalize_session(session_id):
-    """Finalize session after all reviews are complete."""
+    """Finalize session after all reviews are complete (deprecated - status is now set to ready automatically after approving all answers)."""
     try:
         # Verify session and user is creator
-        session_response = supabase.table("session").select("created_by").eq("session_id", session_id).single().execute()
+        session_response = supabase.table("session").select("created_by, status").eq("session_id", session_id).single().execute()
         
         if session_response.data["created_by"] != request.user_id:
             return jsonify({"error": "Only session creator can finalize session"}), 403
         
+        session = session_response.data
+        
+        # If session is already ready, just return success
+        if session.get("status") == "ready":
+            return jsonify({
+                "session_id": session_id,
+                "status": "ready",
+                "message": "Session is already ready"
+            }), 200
+        
         # Verify all requirements are met
-        # Check if all questions have reference answers
+        # Check if all questions have approved reference answers
         questions_response = supabase.table("question").select("question_id, reference_answer, status").eq("session_id", session_id).execute()
         
         if not questions_response.data:
             return jsonify({"error": "No questions found. Cannot finalize session without questions."}), 400
         
         questions = questions_response.data
-        for q in questions:
-            if not q.get("reference_answer") or q.get("status") != "answers_approved":
-                return jsonify({"error": "All questions must have approved reference answers"}), 400
+        questions_with_answers = [q for q in questions if q.get("reference_answer")]
+        
+        # Check if all questions with answers are approved
+        all_approved = len(questions_with_answers) > 0 and all(
+            q.get("status") == "answers_approved" for q in questions_with_answers
+        )
+        
+        if not all_approved:
+            return jsonify({"error": "All questions must have approved reference answers before finalizing"}), 400
         
         # Update session status to ready
         supabase.table("session").update({
