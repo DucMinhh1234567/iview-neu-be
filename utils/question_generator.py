@@ -3,7 +3,7 @@ Question generation utilities using AI.
 """
 from typing import Any, Dict, List, Optional, Protocol
 
-from extensions import llm_interview, llm_vandap
+from extensions import llm_interview, llm_qanda
 from extensions.llm_core import call_llm_json
 from utils.vector_search import search_for_question_generation
 from utils.bloom_taxonomy import bloom_to_difficulty
@@ -36,7 +36,7 @@ def _select_prompt_module(session_type: Optional[str]) -> QuestionPromptModule:
     """Select appropriate prompt module based on session type."""
     if (session_type or "").upper() == "INTERVIEW":
         return llm_interview
-    return llm_vandap
+    return llm_qanda
 
 
 def generate_questions_for_session(

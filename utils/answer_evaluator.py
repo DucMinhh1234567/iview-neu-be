@@ -3,7 +3,7 @@ Answer evaluation utilities using AI.
 """
 from typing import Any, Dict, List, Optional, Protocol
 
-from extensions import llm_interview, llm_vandap
+from extensions import llm_interview, llm_qanda
 from extensions.llm_core import call_llm_json
 
 
@@ -31,7 +31,7 @@ def _select_prompt_module(session_type: Optional[str]) -> EvaluationPromptModule
     """Pick interview or vấn đáp prompt module based on session type."""
     if (session_type or "").upper() == "INTERVIEW":
         return llm_interview
-    return llm_vandap
+    return llm_qanda
 
 
 def evaluate_answer(
