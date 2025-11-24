@@ -45,6 +45,12 @@ Yêu cầu:
 6. Không tạo đáp án trắc nghiệm
 7. Diễn đạt rõ ràng, dễ hiểu, phù hợp vấn đáp học thuật
 8. Khuyến khích người học phân tích, vận dụng và lý giải
+9. QUAN TRỌNG - Trích dẫn nguyên văn khi cần:
+   - Chỉ trích dẫn khi câu hỏi thực sự đòi hỏi dẫn chứng cụ thể (định nghĩa, khái niệm, phát biểu, dữ kiện). Nếu câu hỏi thiên về phân tích, vận dụng, đánh giá thì không cần trích dẫn.
+   - Khi cần trích dẫn, phải chèn NGUYÊN VĂN nội dung vào trong câu hỏi (đặt trong dấu ngoặc kép hoặc khối trích) và ghi rõ nguồn đoạn. Ví dụ:
+     "Tài liệu nêu: 'Đỉnh rẽ nhánh (branching vertex) là đỉnh có bậc lớn hơn 2 trong đồ thị' (Đoạn 7). Dựa trên định nghĩa này, hãy..."
+   - Tránh các câu chung chung kiểu "Dựa vào tài liệu..." mà không có nội dung dẫn chứng.
+   - Chỉ trích phần cần thiết; giữ trích dẫn ngắn gọn nhưng đủ thông tin.
 {requirements_text}
 
 Định dạng xuất (JSON):
@@ -81,7 +87,7 @@ def prompt_generate_reference_answers(
 
     course_info = f"\nMôn học/Khoá học: {course_name}" if course_name else ""
 
-    return f"""Bạn là giảng viên muốn chuẩn hóa đáp án mẫu dùng để đối chiếu khi chấm vấn đáp. Hãy tạo đáp án đầy đủ cho từng câu hỏi dựa trên ngữ cảnh.
+    return f"""Bạn là giảng viên muốn chuẩn hóa đáp án mẫu dùng để đối chiếu khi chấm vấn đáp. Hãy tạo đáp án cô đọng, đúng trọng tâm cho từng câu hỏi dựa trên ngữ cảnh.
 
 Câu hỏi:
 {questions_text}
@@ -93,17 +99,18 @@ Ngữ cảnh:
 Yêu cầu:
 1. Tạo đáp án mẫu cho TẤT CẢ câu hỏi
 2. Bám sát kiến thức trong ngữ cảnh, tránh suy diễn ngoài phạm vi
-3. Diễn đạt mạch lạc, đi từ ý chính tới chi tiết quan trọng
-4. Làm rõ lập luận, khái niệm và điểm cần nhấn mạnh
-5. Liên hệ độ khó tương ứng với Bloom
-6. Lồng ghép tự nhiên các từ khóa đã cung cấp
+3. Trả lời đúng trọng tâm, độ dài gợi ý 4-7 câu cho EASY/MEDIUM và tối đa 10 câu cho HARD
+4. Ưu tiên trình bày rõ ràng theo cấu trúc: Ý chính → Giải thích/luận cứ → Kết luận/khuyến nghị (nếu cần)
+5. Nhấn mạnh luận điểm quan trọng bằng câu ngắn, tránh râu ria, hạn chế liệt kê lan man
+6. Có thể dùng gạch đầu dòng khi liệt kê để dễ đọc, nhưng giữ tổng thể gọn gàng
+7. Lồng ghép tự nhiên các từ khóa đã cung cấp
 
 Định dạng xuất (JSON):
 {{
   "answers": [
     {{
       "question_index": 0,
-      "reference_answer": "Đáp án mẫu chi tiết..."
+      "reference_answer": "Đáp án mẫu gọn gàng, đúng trọng tâm..."
     }}
   ]
 }}
