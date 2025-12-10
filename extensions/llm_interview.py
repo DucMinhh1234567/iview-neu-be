@@ -15,36 +15,44 @@ def prompt_generate_batch_questions(
 ) -> str:
     """Generate prompt for interview question batch creation."""
     chunks_text = "\n\n".join(
-        f"[Chunk {idx + 1}]: {chunk.get('text', '')}"
+        f"[Đoạn {idx + 1}]: {chunk.get('text', '')}"
         for idx, chunk in enumerate(context_chunks)
     )
 
     num_q = num_questions or BATCH_SIZE
-    course_info = f"\nCourse: {course_name}" if course_name else ""
+    course_info = f"\nVị trí/Công việc: {course_name}" if course_name else ""
     requirements_text = (
         f"\n\nAdditional Requirements: {additional_requirements}"
         if additional_requirements
         else ""
     )
 
-    return f"""You are an expert interviewer crafting behavioral and situational interview questions. Generate {num_q} high-quality questions based on the provided context.
+    return f"""Bạn là chuyên gia phỏng vấn tuyển dụng, đang soạn các câu hỏi phỏng vấn hành vi và tình huống. Hãy tạo {num_q} câu hỏi chất lượng cao dựa hoàn toàn trên ngữ cảnh được cung cấp.
 
-Context Chunks:
+Ngữ cảnh:
 {chunks_text}
 {course_info}
 
-Difficulty Level: {difficulty} (Bloom Taxonomy)
-Question Style: Interview discussion (no multiple choice)
+Cấp độ nhận thức: {difficulty} (theo Bloom Taxonomy)
+Phong cách câu hỏi: Phỏng vấn việc làm
 
-Requirements:
-1. Generate exactly {num_q} questions
-2. Questions must be grounded ONLY on the provided context chunks
-3. Emphasize real-life scenarios, reasoning, and reflection suitable for interviews
-4. Ensure each question explores a distinct competency or angle
-5. Do NOT include reference answers (they will be generated separately)
-6. Avoid multiple choice format
-7. Keep questions clear, specific, and open-ended to spark conversation
-8. Encourage candidates to explain decisions, experiences, or justifications
+Yêu cầu bắt buộc:
+1. Tạo đúng {num_q} câu hỏi
+2. Mỗi câu hỏi PHẢI dựa HOÀN TOÀN trên ngữ cảnh được cung cấp, không dùng kiến thức bên ngoài
+3. Tập trung vào các tình huống thực tế, lý luận và phản ánh phù hợp với phỏng vấn
+4. Mỗi câu hỏi phải khám phá một năng lực hoặc góc độ khác biệt
+5. KHÔNG bao gồm đáp án mẫu (sẽ tạo riêng sau)
+6. Câu hỏi phải rõ ràng, cụ thể và mở để khuyến khích cuộc trò chuyện
+7. Khuyến khích ứng viên giải thích quyết định, kinh nghiệm hoặc lý do
+
+Quy tắc quan trọng:
+- KHÔNG tạo các câu hỏi kiểu "Theo tài liệu nhận được", "Dựa trên ví dụ", "Được đề cập trong tài liệu" hoặc tương tự
+- Ngôn ngữ thân thiện, tự nhiên, giống như người phỏng vấn đang nói trực tiếp với ứng viên
+- Người phỏng vấn KHÔNG được tham chiếu rằng họ đã đọc tài liệu - câu hỏi phải cảm giác tự nhiên
+- Câu hỏi phải kiểm tra kiến thức/ứng dụng/phân tích, có thể tạo câu hỏi tính toán dựa trên lý thuyết
+- Tránh tạo câu hỏi dựa trên ví dụ cụ thể nếu đoạn văn không đề cập rõ ràng
+- Câu hỏi phải hỏi về kiến thức/áp dụng/lý giải, không chỉ nhớ lại thông tin
+- Nếu ngữ cảnh không nhắc đến một khái niệm, KHÔNG tạo câu hỏi về khái niệm đó
 {requirements_text}
 
 Output format (JSON):
@@ -58,7 +66,9 @@ Output format (JSON):
   ]
 }}
 
-Generate the questions now:"""
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX.
+
+Tạo các câu hỏi ngay bây giờ:"""
 
 
 def prompt_generate_reference_answers(
@@ -68,35 +78,36 @@ def prompt_generate_reference_answers(
 ) -> str:
     """Generate prompt for interview reference answers."""
     questions_text = "\n\n".join(
-        f"Q{idx + 1}: {question.get('question', '')}\n"
-        f"Keywords: {question.get('keywords', '')}\n"
-        f"Difficulty: {question.get('difficulty', 'MEDIUM')}"
+        f"Câu {idx + 1}: {question.get('question', '')}\n"
+        f"Từ khóa: {question.get('keywords', '')}\n"
+        f"Độ khó: {question.get('difficulty', 'MEDIUM')}"
         for idx, question in enumerate(questions)
     )
 
     chunks_text = "\n\n".join(
-        f"[Chunk {idx + 1}]: {chunk.get('text', '')}"
+        f"[Đoạn {idx + 1}]: {chunk.get('text', '')}"
         for idx, chunk in enumerate(context_chunks)
     )
 
-    course_info = f"\nCourse: {course_name}" if course_name else ""
+    course_info = f"\nVị trí/Công việc: {course_name}" if course_name else ""
 
-    return f"""You are an expert interviewer designing model responses for interview questions. Create comprehensive, conversational reference answers using the provided questions and context.
+    return f"""Bạn là chuyên gia phỏng vấn thiết kế câu trả lời mẫu cho các câu hỏi phỏng vấn. Hãy tạo đáp án mẫu toàn diện, mang tính đàm thoại sử dụng các câu hỏi và ngữ cảnh được cung cấp.
 
-Questions:
+Danh sách câu hỏi:
 {questions_text}
 
-Context Chunks:
+Ngữ cảnh:
 {chunks_text}
 {course_info}
 
-Requirements:
-1. Produce reference answers for ALL questions
-2. Answers must be grounded on the provided context chunks
-3. Responses should model strong interview storytelling (Situation-Task-Action-Result)
-4. Highlight reasoning, decision-making, and personal insights
-5. Align tone and depth with the difficulty level
-6. Incorporate the supplied keywords naturally
+Yêu cầu:
+1. Tạo đáp án mẫu cho TẤT CẢ các câu hỏi
+2. Đáp án PHẢI dựa trên ngữ cảnh được cung cấp, không suy diễn ngoài phạm vi
+3. Câu trả lời nên mô hình hóa cách kể chuyện phỏng vấn mạnh mẽ (Tình huống-Nhiệm vụ-Hành động-Kết quả)
+4. Làm nổi bật lý luận, quyết định và những hiểu biết cá nhân
+5. Điều chỉnh giọng điệu và độ sâu phù hợp với cấp độ khó
+6. Lồng ghép tự nhiên các từ khóa đã cung cấp
+7. Đáp án phải đầy đủ, chi tiết nhưng không quá dài dòng (khoảng 100-200 từ mỗi câu hỏi)
 
 Output format (JSON):
 {{
@@ -108,7 +119,9 @@ Output format (JSON):
   ]
 }}
 
-Generate the reference answers now:"""
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Đảm bảo số lượng answers bằng số lượng questions.
+
+Tạo đáp án mẫu ngay bây giờ:"""
 
 
 def prompt_evaluate_answer(
@@ -118,30 +131,31 @@ def prompt_evaluate_answer(
     difficulty: str = "MEDIUM"
 ) -> str:
     """Generate prompt for evaluating interview answers."""
-    return f"""You are an expert interviewer assessing a candidate's response. Evaluate the answer using the criteria below, tailored for interview performance.
+    return f"""Bạn là chuyên gia phỏng vấn đang đánh giá phản hồi của ứng viên. Hãy đánh giá câu trả lời theo các tiêu chí dưới đây, được điều chỉnh cho hiệu suất phỏng vấn.
 
-Question: {question}
+Câu hỏi: {question}
 
-Candidate Answer: {student_answer}
+Câu trả lời của ứng viên: {student_answer}
 
-Reference Answer: {reference_answer}
+Đáp án mẫu: {reference_answer}
 
-Difficulty Level: {difficulty}
+Cấp độ khó: {difficulty}
 
-Evaluation Criteria (0-10 each):
-1. Correctness: Does the answer address the prompt accurately and stay on topic?
-2. Coverage: Does it provide sufficient depth, examples, or context from experience?
-3. Reasoning: Are decisions and thought processes explained clearly?
-4. Creativity: Does the candidate offer original insights or nuanced perspectives?
-5. Communication: Is the delivery structured, confident, and easy to follow?
-6. Attitude: Is the tone professional, collaborative, and growth-minded?
+Tiêu chí đánh giá (0-10 mỗi tiêu chí):
+1. Correctness (Tính chính xác): Câu trả lời có giải quyết chính xác câu hỏi và giữ đúng chủ đề không?
+2. Coverage (Độ bao phủ): Có cung cấp đủ độ sâu, ví dụ hoặc ngữ cảnh từ kinh nghiệm không?
+3. Reasoning (Lý luận): Quyết định và quá trình suy nghĩ có được giải thích rõ ràng không?
+4. Creativity (Sáng tạo): Ứng viên có đưa ra những hiểu biết độc đáo hoặc quan điểm tinh tế không?
+5. Communication (Giao tiếp): Cách trình bày có cấu trúc, tự tin và dễ theo dõi không?
+6. Attitude (Thái độ): Giọng điệu có chuyên nghiệp, hợp tác và hướng tới phát triển không?
 
-Requirements:
-1. Score each criterion on a 0-10 scale
-2. Provide detailed feedback highlighting interview strengths and growth areas
-3. Mention notable examples or reasoning from the answer
-4. Stay constructive and encouraging
-5. Tailor feedback to the stated difficulty level
+Yêu cầu:
+1. Cho điểm từng tiêu chí theo thang 0-10 (có thể dùng số thập phân như 7.5, 8.5)
+2. Viết nhận xét chi tiết nêu rõ điểm mạnh và lĩnh vực cần phát triển trong phỏng vấn
+3. Đề cập đến các ví dụ hoặc lý luận đáng chú ý từ câu trả lời
+4. Giữ tinh thần xây dựng và khuyến khích
+5. Điều chỉnh phản hồi phù hợp với cấp độ khó đã nêu
+6. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
 
 Output format (JSON):
 {{
@@ -159,6 +173,8 @@ Output format (JSON):
   "weaknesses": ["weakness 1", "weakness 2"]
 }}
 
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Đảm bảo tất cả điểm số là số thực từ 0.0 đến 10.0.
+
 Evaluate the answer now:"""
 
 
@@ -168,10 +184,10 @@ def prompt_generate_overall_feedback(
 ) -> str:
     """Generate prompt for overall interview feedback."""
     qa_text = "\n\n".join(
-        f"Q{idx + 1}: {pair.get('question', '')}\n"
-        f"Answer: {pair.get('answer', '')}\n"
-        f"Score: {pair.get('score', 0)}/10\n"
-        f"Feedback: {pair.get('feedback', '')}"
+        f"Câu {idx + 1}: {pair.get('question', '')}\n"
+        f"Trả lời: {pair.get('answer', '')}\n"
+        f"Điểm: {pair.get('score', 0)}/10\n"
+        f"Nhận xét: {pair.get('feedback', '')}"
         for idx, pair in enumerate(qa_pairs)
     )
 
@@ -180,21 +196,22 @@ def prompt_generate_overall_feedback(
         for criterion, score in scores_summary.items()
     )
 
-    return f"""You are summarizing a job interview performance. Provide holistic feedback that helps the candidate grow.
+    return f"""Bạn đang tổng kết hiệu suất phỏng vấn tuyển dụng. Hãy cung cấp phản hồi tổng thể giúp ứng viên phát triển.
 
-Question-Answer Pairs:
+Các cặp Câu hỏi-Trả lời:
 {qa_text}
 
-Overall Scores Summary:
+Tổng hợp điểm số:
 {scores_text}
 
-Requirements:
-1. Deliver an overall assessment of the candidate's interview performance
-2. Highlight behavioral strengths and communication qualities
-3. Identify key improvement areas with context
-4. Offer practical recommendations for future interviews
-5. Maintain a constructive, professional tone
-6. Consider performance across all answers, not isolated moments
+Yêu cầu:
+1. Đưa ra đánh giá tổng thể về hiệu suất phỏng vấn của ứng viên
+2. Làm nổi bật điểm mạnh về hành vi và phẩm chất giao tiếp
+3. Xác định các lĩnh vực cải thiện chính với ngữ cảnh
+4. Đưa ra các khuyến nghị thực tế cho các cuộc phỏng vấn trong tương lai
+5. Duy trì giọng điệu xây dựng, chuyên nghiệp
+6. Xem xét hiệu suất trên tất cả các câu trả lời, không chỉ những khoảnh khắc riêng lẻ
+7. Phản hồi phải cụ thể, có thể hành động được (150-300 từ)
 
 Output format (JSON):
 {{
@@ -203,6 +220,8 @@ Output format (JSON):
   "weaknesses": ["weakness 1", "weakness 2"],
   "recommendations": ["recommendation 1", "recommendation 2"]
 }}
+
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Recommendations phải cụ thể và có thể thực hiện được.
 
 Generate the overall feedback now:"""
 
