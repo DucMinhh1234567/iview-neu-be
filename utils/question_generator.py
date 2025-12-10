@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Protocol
 from extensions import llm_interview, llm_qanda
 from extensions.llm_core import call_llm_json
 from utils.vector_search import search_for_question_generation
-from utils.bloom_taxonomy import bloom_to_difficulty
 from extensions.supabase_client import supabase
 
 
@@ -102,17 +101,18 @@ def generate_questions_for_session(
         
         questions = response["questions"]
         
-        # Map difficulty from Bloom to question difficulty
-        question_difficulty = bloom_to_difficulty(difficulty_level)
-        
         # Format questions for database
         formatted_questions: List[Dict[str, Any]] = []
         for q in questions:
+            # Với INTERVIEW: LLM trả về question_type; với vấn đáp/thi: dùng Bloom level của session
+            question_type = q.get("question_type") or (
+                difficulty_level if (session_type or "").upper() != "INTERVIEW" else ""
+            )
             formatted_questions.append({
                 "session_id": session_id,
                 "content": q.get("question", ""),
                 "keywords": q.get("keywords", ""),
-                "difficulty": q.get("difficulty", question_difficulty),
+                "question_type": question_type,
                 "status": "draft",
                 "reference_answer": None  # Will be generated later
             })
@@ -170,7 +170,7 @@ def generate_reference_answers_for_questions(
             {
                 "question": q["content"],
                 "keywords": q.get("keywords", ""),
-                "difficulty": q.get("difficulty", "MEDIUM")
+                "question_type": q.get("question_type", "")
             }
             for q in questions
         ]

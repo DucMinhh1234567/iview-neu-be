@@ -33,7 +33,7 @@ Ngữ cảnh:
 {chunks_text}
 {course_info}
 
-Cấp độ nhận thức: {difficulty} (theo Bloom Taxonomy)
+Cấp độ nhận thức (Bloom): {difficulty}
 Phong cách câu hỏi: Phỏng vấn việc làm
 
 Yêu cầu bắt buộc:
@@ -61,7 +61,7 @@ Output format (JSON):
     {{
       "question": "Question text here",
       "keywords": "keyword1, keyword2, keyword3",
-      "difficulty": "EASY|MEDIUM|HARD"
+      "question_type": "behavioral|situational|technical|case|coding|competency"
     }}
   ]
 }}
@@ -80,7 +80,7 @@ def prompt_generate_reference_answers(
     questions_text = "\n\n".join(
         f"Câu {idx + 1}: {question.get('question', '')}\n"
         f"Từ khóa: {question.get('keywords', '')}\n"
-        f"Độ khó: {question.get('difficulty', 'MEDIUM')}"
+        f"Loại câu hỏi: {question.get('question_type', '')}"
         for idx, question in enumerate(questions)
     )
 
@@ -105,7 +105,7 @@ Yêu cầu:
 2. Đáp án PHẢI dựa trên ngữ cảnh được cung cấp, không suy diễn ngoài phạm vi
 3. Câu trả lời nên mô hình hóa cách kể chuyện phỏng vấn mạnh mẽ (Tình huống-Nhiệm vụ-Hành động-Kết quả)
 4. Làm nổi bật lý luận, quyết định và những hiểu biết cá nhân
-5. Điều chỉnh giọng điệu và độ sâu phù hợp với cấp độ khó
+5. Điều chỉnh giọng điệu và độ sâu phù hợp với loại câu hỏi
 6. Lồng ghép tự nhiên các từ khóa đã cung cấp
 7. Đáp án phải đầy đủ, chi tiết nhưng không quá dài dòng (khoảng 100-200 từ mỗi câu hỏi)
 

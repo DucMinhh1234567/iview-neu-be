@@ -118,7 +118,7 @@ def update_question(question_id):
     
     content = data.get("content")
     keywords = data.get("keywords")
-    difficulty = data.get("difficulty")
+    question_type = data.get("question_type")
     
     try:
         # Verify question exists
@@ -141,8 +141,8 @@ def update_question(question_id):
             update_data["content"] = content
         if keywords:
             update_data["keywords"] = keywords
-        if difficulty:
-            update_data["difficulty"] = difficulty
+        if question_type is not None:
+            update_data["question_type"] = question_type
         
         if update_data:
             supabase.table("question").update(update_data).eq("question_id", question_id).execute()

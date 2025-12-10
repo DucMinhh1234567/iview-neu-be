@@ -33,7 +33,7 @@ Ngữ cảnh:
 {chunks_text}
 {course_info}
 
-Cấp độ nhận thức: {difficulty} (theo Bloom Taxonomy)
+Cấp độ nhận thức (Bloom): {difficulty}
 Dạng câu hỏi: Tự luận / vấn đáp
 
 Yêu cầu bắt buộc:
@@ -61,7 +61,7 @@ Quy tắc quan trọng:
     {{
       "question": "Nội dung câu hỏi...",
       "keywords": "từ khóa 1, từ khóa 2, ...",
-      "difficulty": "EASY|MEDIUM|HARD"
+      "question_type": "REMEMBER|UNDERSTAND|APPLY|ANALYZE|EVALUATE|CREATE"
     }}
   ]
 }}
@@ -80,7 +80,7 @@ def prompt_generate_reference_answers(
     questions_text = "\n\n".join(
         f"Câu {idx + 1}: {question.get('question', '')}\n"
         f"Từ khóa: {question.get('keywords', '')}\n"
-        f"Độ khó: {question.get('difficulty', 'MEDIUM')}"
+        f"Bloom level: {question.get('question_type', '')}"
         for idx, question in enumerate(questions)
     )
 

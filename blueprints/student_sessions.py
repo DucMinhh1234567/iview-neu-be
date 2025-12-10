@@ -210,7 +210,7 @@ def get_next_question(student_session_id):
             "question": question["content"],
             "question_number": len(answered_question_ids) + 1,
             "total_questions": total_questions,
-            "difficulty": question.get("difficulty", "MEDIUM")
+            "question_type": question.get("question_type", "")
         }), 200
         
     except Exception as e:
@@ -409,7 +409,7 @@ def end_session(student_session_id):
                     question=question.get("content", ""),
                     student_answer=answer.get("answer_text", ""),
                     reference_answer=reference_answer,
-                    difficulty=question.get("difficulty", "MEDIUM"),
+                    difficulty=question.get("question_type", ""),
                     session_type=session_type
                 )
                 
