@@ -156,6 +156,7 @@ Yêu cầu:
 4. Giữ tinh thần xây dựng và khuyến khích
 5. Điều chỉnh phản hồi phù hợp với cấp độ khó đã nêu
 6. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
+7. Phản hồi phải cụ thể, có thể hành động được (250-500 từ)
 
 Output format (JSON):
 {{
@@ -173,7 +174,7 @@ Output format (JSON):
   "weaknesses": ["weakness 1", "weakness 2"]
 }}
 
-Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Đảm bảo tất cả điểm số là số thực từ 0.0 đến 10.0.
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX. Đảm bảo tất cả điểm số là số thực từ 0.0 đến 10.0.
 
 Evaluate the answer now:"""
 
@@ -221,7 +222,7 @@ Output format (JSON):
   "recommendations": ["recommendation 1", "recommendation 2"]
 }}
 
-Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Recommendations phải cụ thể và có thể thực hiện được.
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX. Recommendations phải cụ thể và có thể thực hiện được.
 
 Generate the overall feedback now:"""
 

@@ -107,7 +107,7 @@ Yêu cầu:
 4. Làm rõ lập luận, khái niệm và điểm cần nhấn mạnh
 5. Liên hệ độ khó tương ứng với Bloom Taxonomy
 6. Lồng ghép tự nhiên các từ khóa đã cung cấp
-7. Đáp án phải đầy đủ, chi tiết nhưng không quá dài dòng (khoảng 100-200 từ mỗi câu)
+7. Đáp án phải đầy đủ, chi tiết nhưng không quá dài dòng (khoảng 100-200 từ mỗi câu hỏi)
 8. Cấu trúc rõ ràng: ý chính → giải thích → ví dụ (nếu cần)
 
 Định dạng xuất (JSON):
@@ -120,7 +120,7 @@ Yêu cầu:
   ]
 }}
 
-Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Đảm bảo số lượng answers bằng số lượng questions.
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX. Đảm bảo số lượng answers bằng số lượng questions.
 
 Hãy tạo đáp án ngay bây giờ:"""
 
@@ -131,7 +131,7 @@ def prompt_evaluate_answer(
     reference_answer: str,
     difficulty: str = "MEDIUM"
 ) -> str:
-    """Generate prompt for vấn đáp answer evaluation."""
+    """Generate prompt chấm điểm vấn đáp answer evaluation."""
     return f"""Bạn là giảng viên chấm vấn đáp. Hãy đánh giá câu trả lời của sinh viên theo các tiêu chí học thuật dưới đây.
 
 Câu hỏi: {question}
@@ -157,6 +157,7 @@ Yêu cầu:
 4. Thể hiện tinh thần khích lệ, xây dựng
 5. Đánh giá phù hợp với cấp độ khó
 6. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
+7. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
 
 Định dạng xuất (JSON):
 {{
@@ -174,7 +175,7 @@ Yêu cầu:
   "weaknesses": ["điểm cần cải thiện 1", "điểm cần cải thiện 2"]
 }}
 
-Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Đảm bảo tất cả điểm số là số thực từ 0.0 đến 10.0. Strengths và weaknesses nên có 2-4 mục.
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX. Đảm bảo tất cả điểm số là số thực từ 0.0 đến 10.0. Strengths và weaknesses nên có 2-4 mục.
 
 Hãy tiến hành chấm điểm:"""
 
@@ -212,7 +213,7 @@ Yêu cầu:
 4. Đề xuất định hướng/hoạt động cải thiện cụ thể
 5. Giữ giọng văn tích cực, hỗ trợ người học
 6. Dựa trên toàn bộ câu trả lời, tránh chỉ xét từng phần riêng lẻ
-7. Phản hồi phải cụ thể, có thể hành động được (150-300 từ)
+7. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
 
 Định dạng xuất (JSON):
 {{
@@ -222,7 +223,7 @@ Yêu cầu:
   "recommendations": ["gợi ý 1", "gợi ý 2"]
 }}
 
-Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block. Strengths và weaknesses nên có 2-4 mục mỗi loại. Recommendations phải cụ thể và có thể thực hiện được.
+Lưu ý: Chỉ trả JSON thuần, không thêm markdown code block (```json ... ```), không sử dụng LaTeX. Strengths và weaknesses nên có 2-4 mục mỗi loại. Recommendations phải cụ thể và có thể thực hiện được.
 
 Hãy tạo đánh giá tổng quan:"""
 
