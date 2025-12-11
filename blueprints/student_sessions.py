@@ -277,8 +277,6 @@ def get_next_question(student_session_id):
                 "question_number": len(answered_question_ids) + 1,
                 "total_questions": total_questions,
                 "question_type": question.get("question_type", ""),
-                "category": question.get("category", ""),
-                "purpose": question.get("purpose", ""),
             }), 200
         else:
             # Get all answered question IDs

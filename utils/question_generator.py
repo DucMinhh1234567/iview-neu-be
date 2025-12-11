@@ -188,8 +188,6 @@ def generate_interview_questions(
                     "content": q.get("question", ""),
                     "keywords": q.get("keywords", ""),
                     "question_type": q.get("question_type", ""),
-                    "category": q.get("category", ""),
-                    "purpose": q.get("purpose", ""),
                     "job_title": job_title,
                     "question_index": idx,
                     "status": "approved",
