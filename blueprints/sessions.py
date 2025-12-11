@@ -137,7 +137,7 @@ def create_interview_session():
     time_limit = data.get("time_limit")
     num_questions = data.get("num_questions")
     
-    if not all([session_name, position, level, cv_url]):
+    if not all([session_name, position, level]):
         return jsonify({"error": "Missing required fields"}), 400
     
     if not time_limit and not num_questions:
@@ -166,7 +166,7 @@ def create_interview_session():
             "session_id": session_id,
             "position": position,
             "level": level,
-            "cv_url": cv_url,
+            "cv_url": cv_url if cv_url else None,
             "jd_url": jd_url if jd_url else None,
             "time_limit": time_limit,
             "num_questions": num_questions
@@ -211,6 +211,17 @@ def upload_cv():
     try:
         # Upload file
         file_info = StorageService.upload_file(file, session_id, file_type="cv")
+        # Update or create interview config with new CV URL
+        config_response = supabase.table("interviewconfig").select("config_id").eq("session_id", session_id).single().execute()
+        if config_response.data:
+            supabase.table("interviewconfig").update({
+                "cv_url": file_info["url"]
+            }).eq("session_id", session_id).execute()
+        else:
+            supabase.table("interviewconfig").insert({
+                "session_id": session_id,
+                "cv_url": file_info["url"]
+            }).execute()
         
         return jsonify({
             "cv_url": file_info["url"],
@@ -242,6 +253,17 @@ def upload_jd():
     try:
         # Upload file
         file_info = StorageService.upload_file(file, session_id, file_type="jd")
+        # Update or create interview config with new JD URL
+        config_response = supabase.table("interviewconfig").select("config_id").eq("session_id", session_id).single().execute()
+        if config_response.data:
+            supabase.table("interviewconfig").update({
+                "jd_url": file_info["url"]
+            }).eq("session_id", session_id).execute()
+        else:
+            supabase.table("interviewconfig").insert({
+                "session_id": session_id,
+                "jd_url": file_info["url"]
+            }).execute()
         
         return jsonify({
             "jd_url": file_info["url"],
