@@ -4,21 +4,21 @@ Hệ thống backend Flask cho ứng dụng phỏng vấn AI với Supabase (Pos
 
 ## Tính Năng Chính
 
-- ✅ **Supabase Integration**: PostgreSQL database với pgvector extension
-- ✅ **Authentication**: Supabase Auth với JWT tokens
-- ✅ **File Storage**: Hybrid storage (Local/Supabase Storage)
-- ✅ **Vector Search**: pgvector cho semantic similarity search
-- ✅ **AI Integration**: Gemini 2.5-flash cho question generation và answer evaluation
-- ✅ **Question Review Workflow**: Generate → Review → Edit → Approve workflow
-- ✅ **Session Types**: EXAM, PRACTICE, INTERVIEW
-- ✅ **Bloom Taxonomy**: Difficulty levels với hierarchical selection
+- **Supabase Integration**: PostgreSQL database với pgvector extension
+- **Authentication**: Supabase Auth với JWT tokens
+- **File Storage**: Hybrid storage (Local/Supabase Storage)
+- **Vector Search**: pgvector cho semantic similarity search
+- **AI Integration**: Gemini 2.5-flash cho question generation và answer evaluation
+- **Question Review Workflow**: Generate → Review → Edit → Approve workflow
+- **Session Types**: EXAM, PRACTICE, INTERVIEW
+- **Bloom Taxonomy**: Difficulty levels với hierarchical selection
 
 ## Cài Đặt
 
-### 1. Clone repository và navigate to backend
+### 1. Clone repository và vào thư mục backend
 
 ```bash
-cd be
+cd iview-neu-be
 ```
 
 ### 2. Tạo virtual environment
@@ -52,10 +52,10 @@ cp env.example .env
    - Vào Supabase Dashboard → Storage
    - Tạo bucket `materials`:
      - Name: `materials`
-     - Public: ✅ **Yes** (public bucket)
+     - Public: **Yes** (public bucket)
    - Tạo bucket `private`:
      - Name: `private`
-     - Public: ❌ **No** (private bucket, cho CVs và JDs)
+     - Public: **No** (private bucket, cho CVs và JDs)
      - **Quan trọng:** Bucket này bắt buộc phải có để upload CV/JD
 
 ### 6. Chạy ứng dụng
@@ -80,42 +80,38 @@ Xem `.env.example` để biết chi tiết các biến môi trường cần thi�
 ## Cấu Trúc Thư Mục
 
 ```
-be/
-├── app.py                    # Flask entry point
-├── config.py                 # Configuration
+iview-neu-be/
+├── app.py                    # Flask entry point & blueprint registration
+├── config.py                 # Config & env helpers (validate on import)
 ├── requirements.txt          # Dependencies
-├── .env.example             # Environment template
-├── README.md                # Documentation
+├── env.example               # Environment template
+├── README.md
 │
-├── blueprints/              # API routes
+├── blueprints/               # API routes (REST)
 │   ├── auth.py
 │   ├── materials.py
 │   ├── sessions.py
 │   ├── questions.py
 │   ├── student_sessions.py
-│   └── review.py
+│   ├── review.py
+│   ├── dashboard.py          # Stats for student/lecturer
+│   └── files.py              # Serve local files
 │
-├── extensions/              # Core integrations
+├── extensions/               # Core integrations
+│   ├── auth_middleware.py    # JWT guard for Supabase Auth
 │   ├── llm_core.py
 │   ├── llm_interview.py
-│   ├── llm_vandap.py
-│   ├── supabase_client.py
-│   └── auth_middleware.py
+│   ├── llm_qanda.py
+│   └── supabase_client.py    # Supabase client + health check
 │
-├── utils/                   # Utilities
-│   ├── storage.py
-│   ├── semantic_chunking.py
-│   ├── vector_search.py
-│   ├── question_generator.py
-│   ├── answer_evaluator.py
-│   └── bloom_taxonomy.py
-│
-└── models/                  # Database models
-    ├── user.py
-    ├── material.py
-    ├── session.py
-    ├── question.py
-    └── student_session.py
+└── utils/                    # Utilities & domain helpers
+    ├── storage.py            # Local/Supabase storage abstraction
+    ├── semantic_chunking.py  # Chunking content
+    ├── vector_search.py
+    ├── question_generator.py
+    ├── answer_evaluator.py
+    ├── bloom_taxonomy.py
+    └── cv_ingest.py
 ```
 
 ## API Endpoints
@@ -139,6 +135,7 @@ be/
 - `POST /api/sessions/interview` - Tạo INTERVIEW session
 - `GET /api/sessions` - Danh sách sessions
 - `GET /api/sessions/<id>` - Chi tiết session
+- `POST /api/sessions/<id>/finalize` - Finalize session
 
 ### Questions
 - `POST /api/questions/generate` - Generate questions
@@ -148,9 +145,6 @@ be/
 - `POST /api/questions/generate-answers` - Generate reference answers
 - `PUT /api/questions/<id>/answer` - Edit reference answer
 - `POST /api/questions/approve-answers` - Approve answers
-
-### Session Script
-- `POST /api/sessions/<id>/finalize` - Finalize session
 
 ### Student Sessions
 - `POST /api/student-sessions/join` - Join session
@@ -167,6 +161,13 @@ be/
 - `GET /api/review/student-sessions/<id>` - Get student session
 - `PUT /api/review/answers/<id>/score` - Edit score
 - `PUT /api/review/answers/<id>/feedback` - Edit feedback
+
+### Dashboard
+- `GET /api/students/<student_id>` - Dashboard sinh viên (yêu cầu đúng user)
+- `GET /api/lecturers/<lecturer_id>` - Dashboard giảng viên
+
+### Files (local storage)
+- `GET /api/files/<file_type>s/<resource_id>/<filename>` - Tải file local (khi không dùng Supabase Storage)
 
 ## Workflow
 
@@ -187,7 +188,4 @@ be/
 5. Repeat until done
 6. End session (overall evaluation)
 
-## License
-
-See original project license.
 
