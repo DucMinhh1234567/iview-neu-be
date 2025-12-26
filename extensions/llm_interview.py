@@ -150,13 +150,14 @@ Tiêu chí đánh giá (0-10 mỗi tiêu chí):
 6. Attitude (Thái độ): Giọng điệu có chuyên nghiệp, hợp tác và hướng tới phát triển không?
 
 Yêu cầu:
-1. Cho điểm từng tiêu chí theo thang 0-10 (có thể dùng số thập phân như 7.5, 8.5)
-2. Viết nhận xét chi tiết nêu rõ điểm mạnh và lĩnh vực cần phát triển trong phỏng vấn
-3. Đề cập đến các ví dụ hoặc lý luận đáng chú ý từ câu trả lời
-4. Giữ tinh thần xây dựng và khuyến khích
-5. Điều chỉnh phản hồi phù hợp với cấp độ khó đã nêu
-6. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
-7. Phản hồi phải cụ thể, có thể hành động được (250-500 từ)
+1. Không cần chào hỏi hay tương tác, hãy trả lời như một báo cáo, đi thẳng vào nhận xét
+2. Cho điểm từng tiêu chí theo thang 0-10 (có thể dùng số thập phân như 7.5, 8.5)
+3. Viết nhận xét chi tiết nêu rõ điểm mạnh và lĩnh vực cần phát triển trong phỏng vấn
+4. Đề cập đến các ví dụ hoặc lý luận đáng chú ý từ câu trả lời
+5. Giữ tinh thần xây dựng và khuyến khích
+6. Điều chỉnh phản hồi phù hợp với cấp độ khó đã nêu
+7. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
+8. Phản hồi phải cụ thể, có thể hành động được (250-500 từ)
 
 Output format (JSON):
 {{
@@ -206,13 +207,14 @@ Tổng hợp điểm số:
 {scores_text}
 
 Yêu cầu:
-1. Đưa ra đánh giá tổng thể về hiệu suất phỏng vấn của ứng viên
-2. Làm nổi bật điểm mạnh về hành vi và phẩm chất giao tiếp
-3. Xác định các lĩnh vực cải thiện chính với ngữ cảnh
-4. Đưa ra các khuyến nghị thực tế cho các cuộc phỏng vấn trong tương lai
-5. Duy trì giọng điệu xây dựng, chuyên nghiệp
-6. Xem xét hiệu suất trên tất cả các câu trả lời, không chỉ những khoảnh khắc riêng lẻ
-7. Phản hồi phải cụ thể, có thể hành động được (150-300 từ)
+1. Không cần chào hỏi hay tương tác, hãy trả lời như một báo cáo, đi thẳng vào nhận xét
+2. Đưa ra đánh giá tổng thể về hiệu suất phỏng vấn của ứng viên
+3. Làm nổi bật điểm mạnh về hành vi và phẩm chất giao tiếp
+4. Xác định các lĩnh vực cải thiện chính với ngữ cảnh
+5. Đưa ra các khuyến nghị thực tế cho các cuộc phỏng vấn trong tương lai
+6. Duy trì giọng điệu xây dựng, chuyên nghiệp
+7. Xem xét hiệu suất trên tất cả các câu trả lời, không chỉ những khoảnh khắc riêng lẻ
+8. Phản hồi phải cụ thể, có thể hành động được (150-300 từ)
 
 Output format (JSON):
 {{

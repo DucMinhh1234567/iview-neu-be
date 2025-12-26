@@ -151,13 +151,14 @@ Tiêu chí chấm (0-10 mỗi tiêu chí):
 6. Attitude (Thái độ): Thái độ, phong thái, sự tự tin khi trình bày có tốt không?
 
 Yêu cầu:
-1. Cho điểm từng tiêu chí theo thang 0-10 (có thể dùng số thập phân)
-2. Viết nhận xét chi tiết nêu rõ điểm mạnh, điểm hạn chế
-3. Gợi ý cải thiện cụ thể cho sinh viên
-4. Thể hiện tinh thần khích lệ, xây dựng
-5. Đánh giá phù hợp với cấp độ khó
-6. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
-7. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
+1. Không cần chào hỏi hay tương tác, hãy trả lời như một báo cáo, đi thẳng vào nhận xét
+2. Cho điểm từng tiêu chí theo thang 0-10 (có thể dùng số thập phân)
+3. Viết nhận xét chi tiết nêu rõ điểm mạnh, điểm hạn chế
+4. Gợi ý cải thiện cụ thể cho sinh viên
+5. Thể hiện tinh thần khích lệ, xây dựng
+6. Đánh giá phù hợp với cấp độ khó
+7. Điểm tổng thể (overall_score) nên là trung bình có trọng số của các tiêu chí
+8. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
 
 Định dạng xuất (JSON):
 {{
@@ -207,13 +208,14 @@ Tổng hợp điểm trung bình theo tiêu chí:
 {scores_text}
 
 Yêu cầu:
-1. Đưa ra nhận xét tổng quan về kết quả vấn đáp
-2. Tóm tắt những ưu điểm nổi bật của sinh viên
-3. Chỉ ra hạn chế chính và lý do
-4. Đề xuất định hướng/hoạt động cải thiện cụ thể
-5. Giữ giọng văn tích cực, hỗ trợ người học
-6. Dựa trên toàn bộ câu trả lời, tránh chỉ xét từng phần riêng lẻ
-7. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
+1. Không cần chào hỏi hay tương tác, hãy trả lời như một báo cáo, đi thẳng vào nhận xét
+2. Đưa ra nhận xét tổng quan về kết quả vấn đáp
+3. Tóm tắt những ưu điểm nổi bật của sinh viên
+4. Chỉ ra hạn chế chính và lý do
+5. Đề xuất định hướng/hoạt động cải thiện cụ thể
+6. Giữ giọng văn tích cực, hỗ trợ người học
+7. Dựa trên toàn bộ câu trả lời, tránh chỉ xét từng phần riêng lẻ
+8. Phản hồi phải cụ thể, có thể hành động được (100-200 từ)
 
 Định dạng xuất (JSON):
 {{

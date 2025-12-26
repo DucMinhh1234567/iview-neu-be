@@ -239,6 +239,18 @@ def generate_reference_answers_for_interview(
         if not questions:
             raise Exception("Interview questions not found")
 
+        # Sort questions by question_index to ensure correct order
+        questions = sorted(questions, key=lambda q: q.get("question_index", 999))
+        
+        # Create a mapping from question_index to question_interview_id for reliable lookup
+        question_index_to_id = {}
+        for i, q in enumerate(questions):
+            question_index = q.get("question_index")
+            if question_index is None:
+                # Fallback to enumerate index if question_index is missing
+                question_index = i
+            question_index_to_id[question_index] = q.get("question_interview_id")
+
         questions_for_prompt = [
             {
                 "question": q.get("content", ""),
@@ -267,8 +279,9 @@ def generate_reference_answers_for_interview(
         answer_map: Dict[int, str] = {}
         for i, answer_data in enumerate(answers):
             question_index = answer_data.get("question_index", i)
-            if question_index < len(questions):
-                question_id = questions[question_index]["question_interview_id"]
+            # Use the mapping to find the correct question_interview_id by question_index
+            question_id = question_index_to_id.get(question_index)
+            if question_id:
                 answer_map[question_id] = answer_data.get("reference_answer", "")
 
         return answer_map
