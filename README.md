@@ -76,9 +76,6 @@ Xem `.env.example` để biết chi tiết các biến môi trường cần thi�
 - `SUPABASE_ANON_KEY`: Anon key (optional, cho public access)
 - `GEMINI_API_KEY`: Google Gemini API key
 - `USE_SUPABASE_STORAGE`: `false` cho development (local), `true` cho production
-- `CORS_ORIGINS`: Danh sách các domain được phép truy cập API (phân cách bằng dấu phẩy)
-  - Development: `http://localhost:3000,http://localhost:3001`
-  - Production: Thêm domain frontend, ví dụ: `http://fit.neu.edu.vn,http://localhost:3000`
 
 ## Cấu Trúc Thư Mục
 

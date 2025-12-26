@@ -60,7 +60,7 @@ BATCH_SIZE = get_env_int("BATCH_SIZE", 8)
 DEBUG = get_env_bool("DEBUG", False)
 SECRET_KEY = get_env("SECRET_KEY", "change-me-in-production")
 # Default CORS origins
-default_cors = "http://localhost:3000,http://localhost:3001,http://localhost:8000,http://localhost:8080"
+default_cors = "http://localhost:3000,http://localhost:3001,http://localhost:8000,http://localhost:8080,http://fit.neu.edu.vn,https://fit.neu.edu.vn"
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", default_cors).split(",")
 CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
 
